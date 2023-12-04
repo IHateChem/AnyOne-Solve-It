@@ -1,0 +1,61 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'syleelsw'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    //lombok
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok' // 테스트 의존성 추가
+    testAnnotationProcessor 'org.projectlombok:lombok' // 테스트 의존성 추가
+
+
+    // oauth2-client 라이브러리
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+
+
+    //JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation "io.jsonwebtoken:jjwt-jackson:0.12.3", {exclude group:'io.jsonwebtoken', module:'jjwt-api'}
+    implementation "io.jsonwebtoken:jjwt-impl:0.12.3", {exclude group:'io.jsonwebtoken', module:'jjwt-api'}
+    runtimeOnly "org.bouncycastle:bcprov-jdk15on:1.68"
+
+    //aop
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    //redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    //validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
