@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ import static org.mockito.BDDMockito.given;
 @EnableAspectJAutoProxy @AutoConfigureWebMvc
 @WebMvcTest(LoginController.class) @Slf4j
 @Import(SpringSecurityConfig.class)
+@MockBean(JpaMetamodelMappingContext.class)
 class LoginControllerTest {
 
 
