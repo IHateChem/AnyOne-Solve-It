@@ -37,4 +37,4 @@ out/
 .vscode/
 
 ### 설정 코드
-application.yml
+**/application.yml
