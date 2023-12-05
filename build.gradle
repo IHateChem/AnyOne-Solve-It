@@ -39,7 +39,8 @@ dependencies {
     // oauth2-client 라이브러리
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
-
+    //mariadb
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 
     //JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
