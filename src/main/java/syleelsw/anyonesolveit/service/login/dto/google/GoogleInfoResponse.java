@@ -1,4 +1,4 @@
-package syleelsw.anyonesolveit.service.login.dto;
+package syleelsw.anyonesolveit.service.login.dto.google;
 
 
 import lombok.Data;

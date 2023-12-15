@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import syleelsw.anyonesolveit.aops.RefreshTokenValidation;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
+import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
 import syleelsw.anyonesolveit.service.login.LoginService;
 
 @RestController @RequestMapping("/api")
@@ -23,6 +25,11 @@ public class LoginController {
     @GetMapping("/test")
     public ResponseEntity getTest(){
         return new ResponseEntity(loginService.test("syleelsw@snu.ac.kr"), HttpStatus.OK);
+    }
+
+    @PostMapping("/update/token") @RefreshTokenValidation
+    public ResponseEntity updateToken(@RequestBody UpdateTokenRequest updateTokenDto){
+        return new ResponseEntity(loginService.updateRefreshToken(updateTokenDto.getRefresh()), HttpStatus.OK);
     }
 
 

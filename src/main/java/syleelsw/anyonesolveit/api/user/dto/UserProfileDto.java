@@ -13,18 +13,16 @@ public class UserProfileDto {
     private String username;
     private String email;
     private String bjname;
-    private Integer rank;
     private String prefer_type;
     private String area;
     private List<String> languages;
     private boolean isFirst;
     @Builder
-    private UserProfileDto(Long id, String username, String email, String bjname, Integer rank, String prefer_type, String area, List<String> languages, boolean isFirst) {
+    private UserProfileDto(Long id, String username, String email, String bjname, String prefer_type, String area, List<String> languages, boolean isFirst) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.bjname = bjname;
-        this.rank = rank;
         this.prefer_type = prefer_type;
         this.area = area;
         this.languages = languages;
@@ -43,19 +41,18 @@ public class UserProfileDto {
                 .username(userInfo.getUsername())
                 .email(userInfo.getEmail())
                 .bjname(userInfo.getBjname())
-                .rank(userInfo.getRank())
                 .prefer_type(userInfo.getPrefer_type())
                 .languages(userInfo.getLanguages())
                 .isFirst(userInfo.isFirst())
                 .build();
     }
-    public UserInfo toUser(long id){
+    public UserInfo toUser(long id, Integer rank){
         return UserInfo.builder()
                 .id(id)
                 .username(this.username)
                 .email(this.email)
                 .bjname(this.bjname)
-                .rank(this.rank)
+                .rank(rank)
                 .prefer_type(this.prefer_type)
                 .languages(this.languages)
                 .isFirst(this.isFirst)

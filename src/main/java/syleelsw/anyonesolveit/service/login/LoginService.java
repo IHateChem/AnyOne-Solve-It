@@ -15,7 +15,7 @@ import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisReposito
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
-import syleelsw.anyonesolveit.service.login.dto.GoogleInfoResponse;
+import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
 
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public class LoginService {
             log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
-            refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Gauth")));
+            refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);

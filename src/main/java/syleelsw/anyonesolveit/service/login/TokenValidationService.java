@@ -14,10 +14,11 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.TokenType;
-import syleelsw.anyonesolveit.service.login.dto.GoogleInfoResponse;
-import syleelsw.anyonesolveit.service.login.dto.GoogleRequest;
-import syleelsw.anyonesolveit.service.login.dto.GoogleResponse;
+import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
+import syleelsw.anyonesolveit.service.login.dto.google.GoogleRequest;
+import syleelsw.anyonesolveit.service.login.dto.google.GoogleResponse;
 import syleelsw.anyonesolveit.aops.Timer;
+import syleelsw.anyonesolveit.service.login.dto.naver.NaverRequest;
 
 import java.util.*;
 
@@ -31,6 +32,33 @@ public class TokenValidationService {
     String clientId;
     @Value("${spring.google.client_secret}")
     String clientSecret;
+
+
+    @Value("${spring.naver.client_id}")
+    String n_clientId;
+    @Value("${spring.naver.client_secret}")
+    String n_clientSecret;
+    @Timer("Naver Authcode")
+    public ResponseEntity<GoogleInfoResponse> getResponseFromNaver(String authCode, RestTemplate restTemplate){
+        log.info("authcode: {}", authCode);
+        NaverRequest googleOAuthRequestParam = NaverRequest
+                .builder()
+                .client_id(n_clientId)
+                .client_secret(n_clientSecret)
+                .code(authCode)
+                //.redirectUri("postmessage")
+                .response_type("code").build();
+
+        ResponseEntity<GoogleResponse> response = restTemplate.postForEntity("https://oauth2.googleapis.com/token",
+                googleOAuthRequestParam, GoogleResponse.class);
+        String jwtToken = response.getBody().getId_token();
+        Map<String, String> map=new HashMap<>();
+        map.put("id_token",jwtToken);
+        return restTemplate.postForEntity("https://oauth2.googleapis.com/tokeninfo",
+                map, GoogleInfoResponse.class);
+    }
+
+
     @Timer("Google Authcode")
     public ResponseEntity<GoogleInfoResponse> getResponseFromGoogle(String authCode, RestTemplate restTemplate){
         log.info("authcode: {}", authCode);
@@ -69,7 +97,6 @@ public class TokenValidationService {
     }
 
     @Timer("saving to Redis")
-    //todo: User로 빠구기
     public String makeRefreshTokenAndSaveToRedis(Long id) {
         String refreshToken = provider.createJwt(id, TokenType.REFRESH);
         RefreshEntity refreshEntity = new RefreshEntity(id, refreshToken);
@@ -85,7 +112,7 @@ public class TokenValidationService {
 
     public HttpHeaders makeJwtHeaders(String Gauth, String refresh){
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Gauth", Gauth);
+        headers.add("Access", Gauth);
         headers.add("RefreshToken", refresh);
         return headers;
     }

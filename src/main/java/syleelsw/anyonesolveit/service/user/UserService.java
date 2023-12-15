@@ -17,12 +17,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final ValidationService validationService;
     public ResponseEntity setProfile(String Access, UserProfileDto userProfile){
-        if(!validationService.isValidateBJId(userProfile.getBjname())){
+        Integer rank = validationService.isValidateBJIdAndGetRank(userProfile.getBjname());
+        if(rank==null){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
         userProfile.setFirst(false);
         Long id = tokenProvider.getUserId(Access);
-        userRepository.save(userProfile.toUser(id));
+        userRepository.save(userProfile.toUser(id, rank));
         return new ResponseEntity(HttpStatus.OK);
     }
 }
