@@ -64,12 +64,12 @@ jobs:
         script: |
           remote_dir="/deploy/anyone"
           local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-          ssh -vvv -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
 
           # Upload the JAR file to the remote server
-          scp -P ${{ secrets.REMOTE_SSH_PORT }} $local_file ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }}:$remote_dir
+          scp -o StrictHostKeyChecking=no -P ${{ secrets.REMOTE_SSH_PORT }} $local_file ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }}:$remote_dir
     
           # Execute the JAR file on the remote server
-          ssh -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
       
 
