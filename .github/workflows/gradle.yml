@@ -1,0 +1,71 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Java CI with Gradle
+
+on:
+  #push:
+    #branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    ## 1) git ignore에 등록된 application.properties 파일 생성해주기
+    - name: make application.yml
+      run: |
+        cd ./src/main/resources
+        touch ./application.yml
+        echo "${{ secrets.PROPERTIES }}" > ./application.yml
+      shell: bash
+    - name: make test/application.yml
+      run: |
+        cd ./src/test/resources
+        touch ./application.yml
+        echo "${{ secrets.TESTPROPERTIES }}" > ./application.yml
+      shell: bash
+
+
+    ## 2) 스프링 프로젝트 jar 파일 빌드
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew build --exclude-task test
+
+      
+    - name: deploy to NHN
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.REMOTE_IP }}
+        username: ${{ secrets.REMOTE_SSH_ID }}
+        key: ${{ secrets.REMOTE_SSH_KEY }}
+        port: ${{ secrets.REMOTE_SSH_PORT }}
+        script: |
+          remote_dir="/deploy/anyone"
+          local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
+          ssh ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
+
+          # Upload the JAR file to the remote server
+          scp -P ${{ secrets.REMOTE_SSH_PORT }} $local_file ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }}:$remote_dir
+    
+          # Execute the JAR file on the remote server
+          ssh -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
+      
+
