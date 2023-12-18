@@ -19,6 +19,7 @@ import syleelsw.anyonesolveit.service.login.dto.google.GoogleRequest;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleResponse;
 import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverRequest;
+import syleelsw.anyonesolveit.service.login.dto.naver.NaverResponse;
 
 import java.util.*;
 
@@ -49,12 +50,11 @@ public class TokenValidationService {
                 //.redirectUri("postmessage")
                 .response_type("code").build();
 
-        ResponseEntity<GoogleResponse> response = restTemplate.postForEntity("https://oauth2.googleapis.com/token",
-                googleOAuthRequestParam, GoogleResponse.class);
-        String jwtToken = response.getBody().getId_token();
-        Map<String, String> map=new HashMap<>();
-        map.put("id_token",jwtToken);
-        return restTemplate.postForEntity("https://oauth2.googleapis.com/tokeninfo",
+        ResponseEntity<NaverResponse> response = restTemplate.postForEntity("https://nid.naver.com/oauth2.0/token",
+                googleOAuthRequestParam, NaverResponse.class);
+        String jwtToken = response.getBody().getAccess_token();
+        Map<String, String> map= Map.of("authorization","Bearer " + jwtToken);
+        return restTemplate.postForEntity("https://openapi.naver.com/v1/nid/me",
                 map, GoogleInfoResponse.class);
     }
 

@@ -2,6 +2,7 @@ package syleelsw.anyonesolveit.domain.study;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.BaseEntity;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
@@ -30,6 +31,13 @@ public class Study extends BaseEntity {
     private String period;
     private String frequency;
     private String study_time;
+    @ColumnDefault("0")
+    private Long popularity;
+    @ColumnDefault("0")
+    private Integer avg_rank;
+    @ColumnDefault("0")
+    private Float avg_solved;
+
     @ElementCollection(fetch = FetchType.LAZY)
     private List<String> members;
     @ManyToOne(fetch = FetchType.LAZY)

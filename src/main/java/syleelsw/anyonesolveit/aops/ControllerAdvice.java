@@ -13,12 +13,17 @@ import org.springframework.util.StopWatch;
 import org.springframework.validation.BindingResult;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
 import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
+
+import java.util.Optional;
 
 @Aspect @RequiredArgsConstructor
 @Component @Slf4j
 public class ControllerAdvice {
     private final JwtTokenProvider jwtTokenProvider;
+    private final StudyRepository studyRepository;
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allService() &&  args(loginBody, bindingResult)")
     public ResponseEntity validator(ProceedingJoinPoint joinPoint, LoginBody loginBody,  BindingResult bindingResult) throws Throwable {
         log.info("validation AOP");
@@ -44,6 +49,24 @@ public class ControllerAdvice {
             return (ResponseEntity) joinPoint.proceed();
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, id, ..)")
+    public ResponseEntity idValidation(ProceedingJoinPoint joinPoint, String Access, Long id) throws Throwable {
+        if(studyRepository.findById(id).isPresent()){
+            return (ResponseEntity) joinPoint.proceed();
+        }else{
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(id, ..)")
+    public ResponseEntity idValidation(ProceedingJoinPoint joinPoint, Long id) throws Throwable {
+        if(studyRepository.findById(id).isPresent()){
+            return (ResponseEntity) joinPoint.proceed();
+        }else{
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 }
