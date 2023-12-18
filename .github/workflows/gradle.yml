@@ -53,6 +53,9 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build --exclude-task test
 
+      
+    - name: Create known_hosts file
+      run: touch $HOME/.ssh/known_hosts
     - name: Add remote host key to known hosts
       run: ssh-keyscan -t rsa -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_IP }} >> ~/.ssh/known_hosts
 
