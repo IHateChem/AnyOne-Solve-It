@@ -52,7 +52,8 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: ./gradlew build --exclude-task test
-
+    - name: Create SSH directory
+      run: mkdir -p $HOME/.ssh
       
     - name: Create known_hosts file
       run: touch $HOME/.ssh/known_hosts
