@@ -56,19 +56,10 @@ jobs:
       
     - name: Make PEM
       run: |
-        echo ${{ secrets.REMOTE_SSH_KEY }} >> $HOME/key.pem
+        echo "${{ secrets.REMOTE_SSH_KEY }}" >> $HOME/key.pem
         chmod 400 $HOME/key.pem
         remote_dir="/deploy/anyone"
         local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
         ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
         ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-    - name: Create SSH directory
-      run: mkdir -p $HOME/.ssh
-
-      
-    - name: Create known_hosts file
-      run: touch $HOME/.ssh/known_hosts
-    - name: Add remote host key to known hosts
-      run: ssh-keyscan -t rsa -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_IP }} >> ~/.ssh/known_hosts
-
 
