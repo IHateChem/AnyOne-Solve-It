@@ -52,31 +52,23 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: ./gradlew build --exclude-task test
+
+      
+    - name: Make PEM
+      run: |
+        echo ${{ secrets.REMOTE_SSH_KEY }} >> $HOME/key.pem
+        chmod 400 $HOME/key.pem
+        remote_dir="/deploy/anyone"
+        local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
+        ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
+        ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
     - name: Create SSH directory
       run: mkdir -p $HOME/.ssh
+
       
     - name: Create known_hosts file
       run: touch $HOME/.ssh/known_hosts
     - name: Add remote host key to known hosts
       run: ssh-keyscan -t rsa -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_IP }} >> ~/.ssh/known_hosts
 
-      
-    - name: deploy to NHN
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.REMOTE_IP }}
-        username: ${{ secrets.REMOTE_SSH_ID }}
-        key: ${{ secrets.REMOTE_SSH_KEY }}
-        port: ${{ secrets.REMOTE_SSH_PORT }}
-        script: |
-          remote_dir="/deploy/anyone"
-          local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
-
-          # Upload the JAR file to the remote server
-          scp -o StrictHostKeyChecking=no -P ${{ secrets.REMOTE_SSH_PORT }} $local_file ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }}:$remote_dir
-    
-          # Execute the JAR file on the remote server
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-      
 
