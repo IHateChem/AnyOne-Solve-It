@@ -53,13 +53,11 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build --exclude-task test
 
-      
     - name: Make PEM
       run: |
-        echo "${{ secrets.REMOTE_SSH_KEY }}" >> $HOME/key.pem
+        echo "${{ secrets.REMOTE_SSH_KEY }}" > $HOME/key.pem
         chmod 400 $HOME/key.pem
         remote_dir="/deploy/anyone"
         local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
         ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
         ssh -i $HOME/key.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-
