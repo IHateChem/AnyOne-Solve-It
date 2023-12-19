@@ -54,28 +54,26 @@ jobs:
       run: ./gradlew build --exclude-task test
     - name: Create SSH directory
       run: mkdir -p $HOME/.ssh
-      
-    - name: Create known_hosts file
-      run: touch $HOME/.ssh/known_hosts
-    - name: Add remote host key to known hosts
-      run: ssh-keyscan -t rsa -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_IP }} >> ~/.ssh/known_hosts
 
-      
-    - name: deploy to NHN
-      uses: appleboy/ssh-action@master
+
+
+    ## 3) 기존에 실행 중인 서비스 종료
+    - name: Stop existing service
+      run: |
+        ssh -i ${{ secrets.REMOTE_SSH_KEY }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "sudo systemctl stop anyone"
+
+    ## 4) 빌드된 파일을 EC2로 복사
+    - name: Copy JAR file to EC2
+      uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.REMOTE_IP }}
         username: ${{ secrets.REMOTE_SSH_ID }}
         key: ${{ secrets.REMOTE_SSH_KEY }}
         port: ${{ secrets.REMOTE_SSH_PORT }}
-        script: |
-          remote_dir="/deploy/anyone"
-          local_file="./build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "pkill -f 'java -jar anyonesolveit-0.0.1-SNAPSHOT-plain.jar'"
+        source: "build/libs/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
+        target: "/deploy/anyone"
 
-          # Upload the JAR file to the remote server
-          scp -o StrictHostKeyChecking=no -P ${{ secrets.REMOTE_SSH_PORT }} $local_file ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }}:$remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar
-    
-          # Execute the JAR file on the remote server
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.REMOTE_SSH_PORT }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} "java -jar $remote_dir/anyonesolveit-0.0.1-SNAPSHOT-plain.jar"
-      
+    ## 5) 서비스 실행
+    - name: Start new service
+      run: |
+        ssh -i ${{ secrets.SSH_PRIVATE_KEY }} ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "sudo systemctl start anyone"
