@@ -55,12 +55,17 @@ jobs:
     - name: Create SSH directory
       run: mkdir -p $HOME/.ssh
 
+      
+    - name: Make PEM
+      run: |
+        echo "${{ secrets.REMOTE_SSH_KEY }}" > $HOME/key.pem
+        chmod 400 $HOME/key.pem
 
 
     ## 3) 기존에 실행 중인 서비스 종료
     - name: Stop existing service
       run: |
-        ssh -i "${{ secrets.REMOTE_SSH_KEY }}" ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "sudo systemctl stop anyone"
+        ssh -i $HOME/key.pem ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "sudo systemctl stop anyone"
 
     ## 4) 빌드된 파일을 EC2로 복사
     - name: Copy JAR file to EC2
@@ -76,4 +81,4 @@ jobs:
     ## 5) 서비스 실행
     - name: Start new service
       run: |
-        ssh -i "${{ secrets.SSH_PRIVATE_KEY }}" ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "sudo systemctl start anyone"
+        ssh -i $HOME/key.pem ${{ secrets.REMOTE_SSH_ID }}@${{ secrets.REMOTE_IP }} -p ${{ secrets.REMOTE_SSH_PORT }} "sudo systemctl start anyone"
