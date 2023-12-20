@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +20,15 @@ import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
-import syleelsw.anyonesolveit.etc.JwtTokenProvider;
-import syleelsw.anyonesolveit.etc.TokenType;
+import syleelsw.anyonesolveit.etc.*;
 import syleelsw.anyonesolveit.service.user.UserService;
 
+import javax.xml.stream.Location;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.as;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest @Slf4j @Transactional
@@ -41,12 +43,138 @@ class StudyServiceTest {
     private StudyService studyService;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+    @Value("${anyone.page}")
+    private Integer page;
     public UserInfo mkUserInfo(Boolean isFirst, String bjName){
         return UserInfo.builder()
                 .email("syleelsw@snu.ac.kr")
                 .isFirst(isFirst)
                 .bjname(bjName)
                 .build();
+    }
+    private StudyDto studyBuilder(List<Long> members){
+        return StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울")).
+                description("알고리즘 스터디")
+                .level(GoalTypes.valueOf("입문"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(members)
+                .period("1주").build();
+    }
+    private StudyDto studyBuilder2(List<Long> members, Locations locations, GoalTypes level, LanguageTypes language){
+        return StudyDto.builder()
+                .study_time("studyTime")
+                .area(locations).
+                description("알고리즘 스터디")
+                .level(level)
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("1번").language(language)
+                .members(members)
+                .period("1주").build();
+    }
+    @DisplayName("기본 검색시 시간 내림차순으로 리턴이 와야합니다.")
+    @Test
+    void testDesc(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response2 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response3 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response4 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response5 = studyService.createStudy(jwt, studyDto);
+        Study study = (Study) response.getBody();
+        Long study_id = study.getId();
+        //when
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        //then
+        assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(study1.getBody()).hasSize(page);
+        assertTrue(isSortedDescending(study1.getBody().stream().map(t -> t.getModifiedDateTime()).collect(Collectors.toList())), "List is not sorted in descending order");
+    }
+    private boolean isSortedDescending(List<LocalDateTime> list) {
+        for (int i = 0; i < list.size() - 1; i++) {
+            if (list.get(i).isBefore(list.get(i + 1))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    @DisplayName("Java 설정후 검색시 자바만 매칭됩니다.")
+    @Test
+    void DefaultSearchJavaTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.PYTHON);
+        StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA);
+
+        studyService.createStudy(jwt, studyDto);
+        studyService.createStudy(jwt, studyDto2);
+        studyService.createStudy(jwt, studyDto2);
+        //when
+
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, Locations.ALL);
+        //then
+        assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(study1.getBody()).hasSize(2);
+    }
+    @DisplayName("page가 너무 크면 넘으면 빈배열이 나오거나 남은 만큼만 나온다. ")
+    @Test
+    void largePageDefaultSearchTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        //when
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        //then
+        assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(study1.getBody()).hasSize(0);
+    }
+    @DisplayName("스터디 검색 orderBy1을 합니다. 가장 최근 스터디 N개가 반환 됩니다. 검색 파라미터는 전부 ALL로 해서 영향 없습니다. ")
+    @Test
+    void testDefaultSearchALL(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response2 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response3 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response4 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity response5 = studyService.createStudy(jwt, studyDto);
+        Study study = (Study) response.getBody();
+        Long study_id = study.getId();
+        //when
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        //then
+        assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(study1.getBody()).hasSize(page);
+
     }
     //todo 문제를 제안하지 않았을때 테스트 케이스 만들기.
     @DisplayName("문제를 제안하면 5분간 제안을 가져올 수 있습니다. 문제를 제안하지 않으면..? ")
@@ -55,15 +183,18 @@ class StudyServiceTest {
         //given
         UserInfo user = mkUserInfo(true, "syleelsw");
         UserInfo savedUser = userRepository.save(user);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
         StudyDto studyDto = StudyDto.builder()
                 .study_time("studyTime")
-                .area("서울").
+                .area(Locations.valueOf("서울")).
                 description("알고리즘 스터디")
-                .level("입문")
+                .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
-                .frequency("1번").language("python")
-                .members(List.of("syleelsw", "igy2840"))
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
         String jwt = jwtTokenProvider.createJwt(savedUser.getId(),TokenType.ACCESS);
         ResponseEntity response = studyService.createStudy(jwt, studyDto);
@@ -88,15 +219,18 @@ class StudyServiceTest {
         //given
         UserInfo user = mkUserInfo(true, "syleelsw");
         UserInfo savedUser = userRepository.save(user);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
         StudyDto studyDto = StudyDto.builder()
                 .study_time("studyTime")
-                .area("서울").
+                .area(Locations.valueOf("서울")).
                 description("알고리즘 스터디")
-                .level("입문")
+                .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
-                .frequency("1번").language("python")
-                .members(List.of("syleelsw", "igy2840"))
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
         String jwt = jwtTokenProvider.createJwt(savedUser.getId(),TokenType.ACCESS);
         ResponseEntity response = studyService.createStudy(jwt, studyDto);
@@ -123,20 +257,25 @@ class StudyServiceTest {
         //given
         UserInfo user2 = mkUserInfo(true, "syleelsw");
         UserInfo savedUser = userRepository.save(user2);
+        //given
+        UserInfo user = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
         StudyDto studyDto = StudyDto.builder()
                 .study_time("studyTime")
-                .area("서울").
+                .area(Locations.valueOf("서울")).
                 description("알고리즘 스터디")
-                .level("입문")
+                .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
-                .frequency("1번").language("python")
-                .members(List.of("syleelsw", "igy2840"))
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
         //when
         String jwt = jwtTokenProvider.createJwt(savedUser.getId(),TokenType.ACCESS);
         String jwt1 = jwtTokenProvider.createJwt(1l, TokenType.ACCESS);
         ResponseEntity response = studyService.createStudy(jwt, studyDto);
+
+
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         ResponseEntity responseEntity = studyService.delStudy(jwt1, study_id);
@@ -166,15 +305,19 @@ class StudyServiceTest {
         String jwt = jwtTokenProvider.createJwt(1l, TokenType.ACCESS);
         //given
         UserInfo userInfo = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser = userRepository.save(userInfo);
+        //given
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
         StudyDto studyDto = StudyDto.builder()
                 .study_time("studyTime")
-                .area("서울").
+                .area(Locations.서울).
                 description("알고리즘 스터디")
-                .level("입문")
+                .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
-                .frequency("1번").language("python")
-                .members(List.of("syleelsw", "igy2840"))
+                .frequency("1번").language(LanguageTypes.PYTHON)
+                .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
 
         //when

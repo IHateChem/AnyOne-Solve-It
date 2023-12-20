@@ -7,6 +7,9 @@ import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.BaseEntity;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
+import syleelsw.anyonesolveit.etc.GoalTypes;
+import syleelsw.anyonesolveit.etc.LanguageTypes;
+import syleelsw.anyonesolveit.etc.Locations;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,9 +27,12 @@ public class Study extends BaseEntity {
     private Long id;
     private String title;
     private String description;
-    private String language;
-    private String level;
-    private String area;
+    @Enumerated(EnumType.STRING)
+    private LanguageTypes language;
+    @Enumerated(EnumType.STRING)
+    private GoalTypes level;
+    @Enumerated(EnumType.STRING)
+    private Locations area;
     private String meeting_type;
     private String period;
     private String frequency;
@@ -38,12 +44,14 @@ public class Study extends BaseEntity {
     @ColumnDefault("0")
     private Float avg_solved;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    private List<String> members;
+    //@ElementCollection(fetch = FetchType.LAZY)
+    @ManyToMany
+    @JoinTable(name = "study_member_join")
+    private Set<UserInfo> members;
     @ManyToOne(fetch = FetchType.LAZY)
     private UserInfo user;
     @Builder
-    private Study(Long id, String title, String description,List<String> members, String language, String level, String area, String meeting_type, String period, String frequency, String study_time) {
+    private Study(Long id, String title, String description,Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -57,7 +65,7 @@ public class Study extends BaseEntity {
         this.study_time = study_time;
     }
 
-    public static Study of(StudyDto studyDto) {
+    public static Study of(StudyDto studyDto, Set<UserInfo> members) {
         return Study.builder()
                 .title(studyDto.getTitle())
                 .description(studyDto.getDescription())
@@ -66,7 +74,7 @@ public class Study extends BaseEntity {
                 .area(studyDto.getArea())
                 .meeting_type(studyDto.getMeeting_type())
                 .period(studyDto.getPeriod())
-                .members(studyDto.getMembers())
+                .members(members)
                 .frequency(studyDto.getFrequency())
                 .study_time(studyDto.getStudy_time())
                 .build();

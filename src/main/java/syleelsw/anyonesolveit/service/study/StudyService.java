@@ -1,10 +1,10 @@
 package syleelsw.anyonesolveit.service.study;
 
 import jakarta.annotation.PostConstruct;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +20,16 @@ import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
+import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
+import syleelsw.anyonesolveit.etc.LanguageTypes;
+import syleelsw.anyonesolveit.etc.Locations;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static java.lang.Math.min;
 
 @Service @Slf4j @RequiredArgsConstructor
 public class StudyService {
@@ -35,16 +38,35 @@ public class StudyService {
     private final UserRepository userRepository;
     private final UserStudyJoinRepository userStudyJoinRepository;
     private Map<Long, Problem> storeProblem;
+    @Value("${anyone.page}")
+    private Integer maxPage;
 
     @PostConstruct
     public void init(){
         storeProblem = new ConcurrentHashMap();
     }
+    private Set<UserInfo> ValidateAndReturnMembers(List<Long> members){
+        if(members.size() == 0){return new HashSet<UserInfo>();}
+        List<UserInfo> users = userRepository.findAllById(members);
+        if(users==null || users.size() < members.size()){
+            throw new IllegalArgumentException("존재하지 않는 유저가 있습니다.");
+        }
+        return users.stream().collect(Collectors.toSet());
+    }
     @Transactional
     public ResponseEntity createStudy(String access, StudyDto studyDto){
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        Study study = Study.of(studyDto);
+        Set<UserInfo> members;
+
+        //잘못된 유저가 있는지 체크
+        try{
+            members = ValidateAndReturnMembers(studyDto.getMembers());
+        }catch (IllegalArgumentException e){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        Study study = Study.of(studyDto, members);
         study.setUser(user);
         study = studyRepository.save(study);
         UserStudyJoin userStudyJoin = UserStudyJoin.builder().study(study).user(user).build();
@@ -56,12 +78,28 @@ public class StudyService {
         Study study = studyRepository.findById(id).get();
         return new ResponseEntity(study, HttpStatus.OK);
     }
-
-    public ResponseEntity findStudy(Integer orderBy) {
-        return null;
+    private List listSplitter(List t,int page){
+        if(t.size() > (page-1)*maxPage){
+            return t.subList((page-1)*maxPage, min(page*maxPage, t.size()));
+        }else{
+            return new ArrayList();
+        }
     }
 
-    public ResponseEntity getStudies(Integer orderBy, String term) {
+    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, Locations area) {
+        List<Study> studies;
+        //todo: Repository에서 쿼리로 가져오게 해야할듯.
+        switch (orderBy) {
+            case 1:
+                studies = listSplitter(studyRepository.searchStudyDefaultOrderBy1(language, level, area).get(), page);
+                break;
+            default:
+                studies = null;
+        }
+        return new ResponseEntity(studies, HttpStatus.OK);
+    }
+
+    public ResponseEntity getStudies(Integer orderBy, String term, Integer page, LanguageTypes language, GoalTypes level,Locations area) {
         return null;
     }
 

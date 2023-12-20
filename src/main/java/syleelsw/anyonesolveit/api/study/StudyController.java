@@ -3,8 +3,13 @@ package syleelsw.anyonesolveit.api.study;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
+import syleelsw.anyonesolveit.etc.GoalTypes;
+import syleelsw.anyonesolveit.etc.LanguageTypes;
+import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.StudyService;
 
 @RestController @RequestMapping("/api/studies")
@@ -13,15 +18,16 @@ import syleelsw.anyonesolveit.service.study.StudyService;
 public class StudyController {
     private final StudyService studyService;
     @GetMapping
-    public ResponseEntity getStudies(@RequestParam Integer order_by, @RequestParam String term){
+    public ResponseEntity getStudies(@RequestParam Integer order_by, @RequestParam String term, @RequestParam Integer page,
+                                     @RequestParam LanguageTypes language, @RequestParam GoalTypes level, @RequestParam Locations area){
         if(term == null){
-            return studyService.findStudy(order_by);
+            return studyService.findStudy(order_by, page, language, level,  area);
         }else{
-            return studyService.getStudies(order_by, term);
+            return studyService.getStudies(order_by, term, page, language, level, area);
         }
     }
     @PostMapping
-    public ResponseEntity createStudy(@RequestHeader String Access, @RequestBody StudyDto studyDto){
+    public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto, BindingResult bindingResult){
         return studyService.createStudy(Access, studyDto);
     }
     @GetMapping("/{id}")
