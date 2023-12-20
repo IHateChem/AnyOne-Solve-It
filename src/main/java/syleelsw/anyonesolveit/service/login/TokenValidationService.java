@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -55,9 +57,10 @@ public class TokenValidationService {
         ResponseEntity<NaverResponse> response = restTemplate.postForEntity("https://nid.naver.com/oauth2.0/token",
                 googleOAuthRequestParam, NaverResponse.class);
         String jwtToken = response.getBody().getAccess_token();
-        Map<String, String> map= Map.of("authorization","Bearer " + jwtToken);
-        return restTemplate.postForEntity("https://openapi.naver.com/v1/nid/me",
-                map, NaverInfo.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("authorization","Bearer " + jwtToken);
+        HttpEntity request = new HttpEntity(headers);
+        return restTemplate.exchange("https://openapi.naver.com/v1/nid/me", HttpMethod.GET, request, NaverInfo.class);
     }
 
 
