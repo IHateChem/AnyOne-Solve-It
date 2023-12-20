@@ -57,14 +57,15 @@ public class LoginService {
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);
     }
-    private ResponseEntity naverLogin(String authCode) {
+    private ResponseEntity naverLogin(String authCode, String authState) {
         RestTemplate restTemplate = new RestTemplate();
         //트라이 익셉션.
-        ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate);
+        ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate, authState);
 
         NaverInfo googleInfoResponse = infoResponse.getBody();
+        log.info("Nave user Info: {}", googleInfoResponse.toString());
         String email = googleInfoResponse.getEmail();
-        String username = googleInfoResponse.getNickname();
+        String username = googleInfoResponse.getName();
         return findUserAndJoin(email, username);
     }
 
@@ -100,15 +101,16 @@ public class LoginService {
     public ResponseEntity login(LoginBody loginBody) {
         Provider provider = loginBody.getProvider();
         String authCode = loginBody.getAuthCode();
-        return loginClassifier(authCode, provider);
+        String authState = loginBody.getAuthState();
+        return loginClassifier(authCode, provider, authState);
     }
 
-    private ResponseEntity loginClassifier(String authCode, Provider provider) {
+    private ResponseEntity loginClassifier(String authCode, Provider provider, String authState) {
         switch (provider){
             case GOOGLE:
                 return googleLogin(authCode);
             case NAVER:
-                return naverLogin(authCode);
+                return naverLogin(authCode, authState);
             default:
                 throw new IllegalStateException("잘못된 Provider 입니다.");
         }

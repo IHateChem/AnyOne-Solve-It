@@ -10,6 +10,6 @@ public class NaverRequest {
     //private String redirect_uri; //: 네이버 개발자센터에서 설정한 Callback URI
     private String client_secret;
     private String code;
-    private String response_type;
+    private String grant_type;
     private String state;
 }

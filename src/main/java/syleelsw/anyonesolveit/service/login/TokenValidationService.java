@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.domain.login.RefreshEntity;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
@@ -19,6 +20,7 @@ import syleelsw.anyonesolveit.service.login.dto.google.GoogleRequest;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleResponse;
 import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
+import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfoResponse;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverRequest;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverResponse;
 
@@ -40,25 +42,51 @@ public class TokenValidationService {
     String n_clientId;
     @Value("${spring.naver.client_secret}")
     String n_clientSecret;
-    @Timer("Naver Authcode")
-    public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate){
-        log.info("authcode: {}", authCode);
-        NaverRequest googleOAuthRequestParam = NaverRequest
-                .builder()
-                .client_id(n_clientId)
-                .client_secret(n_clientSecret)
-                .code(authCode)
-                //.redirectUri("postmessage")
-                .response_type("code").build();
 
-        ResponseEntity<NaverResponse> response = restTemplate.postForEntity("https://nid.naver.com/oauth2.0/token",
-                googleOAuthRequestParam, NaverResponse.class);
-        String jwtToken = response.getBody().getAccess_token();
-        Map<String, String> map= Map.of("authorization","Bearer " + jwtToken);
-        return restTemplate.postForEntity("https://openapi.naver.com/v1/nid/me",
-                map, NaverInfo.class);
+    private MultiValueMap<String, String> makeNaverRequestParam(String code, String state){
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type","authorization_code");
+        params.add("client_id",n_clientId);
+        params.add("client_secret", n_clientSecret);
+        params.add("code", code);
+        params.add("state", state);
+        return params;
     }
+    private HttpEntity<MultiValueMap<String, String>> makeTokenRequest(MultiValueMap<String, String> params) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        HttpEntity<MultiValueMap<String, String>> naverTokenRequest = new HttpEntity<>(params, headers);
+        return naverTokenRequest;
+    }
+    @Timer("Naver Authcode")
+    public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate, String authState){
+        log.info("authcode: {}", authCode);
+        MultiValueMap<String, String> params = makeNaverRequestParam(authCode, authState);
+        HttpEntity<MultiValueMap<String, String>> naverTokenRequest = makeTokenRequest(params);
 
+        ResponseEntity<NaverResponse> response = restTemplate.exchange("https://nid.naver.com/oauth2.0/token",
+                HttpMethod.POST,
+                naverTokenRequest,
+                NaverResponse.class);
+        HttpEntity<MultiValueMap<String, String>> naverProfileRequest = makeProfileRequest(response.getBody().getAccess_token());
+        ResponseEntity<NaverInfoResponse> responseEntity = restTemplate.exchange(
+                "https://openapi.naver.com/v1/nid/me",
+                HttpMethod.POST,
+                naverProfileRequest,
+                NaverInfoResponse.class
+        );
+        log.info("UserInfo Nave: {}", responseEntity.toString());
+
+
+        return new ResponseEntity<NaverInfo>(responseEntity.getBody().getResponse(), HttpStatus.OK);
+    }
+    private HttpEntity<MultiValueMap<String, String>> makeProfileRequest(String naverToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer "+ naverToken);
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        HttpEntity<MultiValueMap<String, String>> naverProfileRequest = new HttpEntity<>(headers);
+        return naverProfileRequest;
+    }
 
     @Timer("Google Authcode")
     public ResponseEntity<GoogleInfoResponse> getResponseFromGoogle(String authCode, RestTemplate restTemplate){
@@ -73,6 +101,7 @@ public class TokenValidationService {
 
         ResponseEntity<GoogleResponse> response = restTemplate.postForEntity("https://oauth2.googleapis.com/token",
                 googleOAuthRequestParam, GoogleResponse.class);
+
         String jwtToken = response.getBody().getId_token();
         Map<String, String> map=new HashMap<>();
         map.put("id_token",jwtToken);
