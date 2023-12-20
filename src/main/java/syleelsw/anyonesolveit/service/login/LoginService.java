@@ -63,8 +63,9 @@ public class LoginService {
         ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate, authState);
 
         NaverInfo googleInfoResponse = infoResponse.getBody();
+        log.info("Nave user Info: {}", googleInfoResponse.toString());
         String email = googleInfoResponse.getEmail();
-        String username = googleInfoResponse.getNickname();
+        String username = googleInfoResponse.getName();
         return findUserAndJoin(email, username);
     }
 

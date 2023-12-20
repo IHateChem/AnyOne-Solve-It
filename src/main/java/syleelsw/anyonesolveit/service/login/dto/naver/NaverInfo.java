@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class NaverInfo {
     private String id;
-    private String nickname;
+    private String name;
     private String profile_image;
     private String age;
     private String gender;
