@@ -41,13 +41,14 @@ public class TokenValidationService {
     @Value("${spring.naver.client_secret}")
     String n_clientSecret;
     @Timer("Naver Authcode")
-    public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate){
+    public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate, String authState){
         log.info("authcode: {}", authCode);
         NaverRequest googleOAuthRequestParam = NaverRequest
                 .builder()
                 .client_id(n_clientId)
                 .client_secret(n_clientSecret)
                 .code(authCode)
+                .state(authState)
                 //.redirectUri("postmessage")
                 .response_type("code").build();
 
