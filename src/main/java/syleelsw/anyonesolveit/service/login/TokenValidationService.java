@@ -50,7 +50,7 @@ public class TokenValidationService {
                 .code(authCode)
                 .state(authState)
                 //.redirectUri("postmessage")
-                .response_type("code").build();
+                .grant_type("code").build();
 
         ResponseEntity<NaverResponse> response = restTemplate.postForEntity("https://nid.naver.com/oauth2.0/token",
                 googleOAuthRequestParam, NaverResponse.class);
