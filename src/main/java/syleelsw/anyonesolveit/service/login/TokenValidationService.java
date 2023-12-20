@@ -18,6 +18,7 @@ import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleRequest;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleResponse;
 import syleelsw.anyonesolveit.aops.Timer;
+import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverRequest;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverResponse;
 
@@ -40,7 +41,7 @@ public class TokenValidationService {
     @Value("${spring.naver.client_secret}")
     String n_clientSecret;
     @Timer("Naver Authcode")
-    public ResponseEntity<GoogleInfoResponse> getResponseFromNaver(String authCode, RestTemplate restTemplate){
+    public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate){
         log.info("authcode: {}", authCode);
         NaverRequest googleOAuthRequestParam = NaverRequest
                 .builder()
@@ -55,7 +56,7 @@ public class TokenValidationService {
         String jwtToken = response.getBody().getAccess_token();
         Map<String, String> map= Map.of("authorization","Bearer " + jwtToken);
         return restTemplate.postForEntity("https://openapi.naver.com/v1/nid/me",
-                map, GoogleInfoResponse.class);
+                map, NaverInfo.class);
     }
 
 

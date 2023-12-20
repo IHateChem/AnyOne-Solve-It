@@ -2,6 +2,7 @@ package syleelsw.anyonesolveit.service.login;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
+import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
 
 import java.util.Map;
 import java.util.Optional;
@@ -55,8 +57,25 @@ public class LoginService {
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);
     }
+    private ResponseEntity naverLogin(String authCode) {
+        RestTemplate restTemplate = new RestTemplate();
+        //트라이 익셉션.
+        ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate);
 
-    @Transactional
+        NaverInfo googleInfoResponse = infoResponse.getBody();
+        String email = googleInfoResponse.getEmail();
+        String username = googleInfoResponse.getNickname();
+        return findUserAndJoin(email, username);
+    }
+
+    private ResponseEntity findUserAndJoin(String email, String username) {
+        UserInfo userInfo = userRepository.findUserByEmail(email);
+        if(userInfo == null) { userInfo = join(email, username);}
+        String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
+
+        return new ResponseEntity<>(Map.of("username", username), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+    }
+
     public ResponseEntity googleLogin(String authCode){
         RestTemplate restTemplate = new RestTemplate();
         //트라이 익셉션.
@@ -65,11 +84,7 @@ public class LoginService {
         GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
-        UserInfo userInfo = userRepository.findUserByEmail(email);
-        if(userInfo == null) { userInfo = join(email, username);}
-        String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
-
-        return new ResponseEntity<>(Map.of("username", username), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+        return findUserAndJoin(email, username);
     }
 
     public UserInfo join(String email, String username){
@@ -81,6 +96,7 @@ public class LoginService {
         return userRepository.save(userInfo);
     }
 
+    @Transactional
     public ResponseEntity login(LoginBody loginBody) {
         Provider provider = loginBody.getProvider();
         String authCode = loginBody.getAuthCode();
@@ -91,8 +107,11 @@ public class LoginService {
         switch (provider){
             case GOOGLE:
                 return googleLogin(authCode);
+            case NAVER:
+                return naverLogin(authCode);
             default:
                 throw new IllegalStateException("잘못된 Provider 입니다.");
         }
     }
+
 }
