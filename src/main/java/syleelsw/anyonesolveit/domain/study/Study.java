@@ -65,6 +65,7 @@ public class Study extends BaseEntity {
         this.study_time = study_time;
     }
 
+
     public static Study of(StudyDto studyDto, Set<UserInfo> members) {
         return Study.builder()
                 .title(studyDto.getTitle())

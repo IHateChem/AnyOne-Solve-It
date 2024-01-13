@@ -78,7 +78,7 @@ public class TokenValidationService {
         log.info("UserInfo Nave: {}", responseEntity.toString());
 
 
-        return new ResponseEntity<NaverInfo>(responseEntity.getBody().getResponse(), HttpStatus.OK);
+        return new ResponseEntity(responseEntity.getBody().getResponse(), HttpStatus.OK);
     }
     private HttpEntity<MultiValueMap<String, String>> makeProfileRequest(String naverToken) {
         HttpHeaders headers = new HttpHeaders();

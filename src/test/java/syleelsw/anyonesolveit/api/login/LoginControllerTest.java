@@ -24,6 +24,7 @@ import syleelsw.anyonesolveit.config.SpringSecurityConfig;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.service.login.LoginService;
 import syleelsw.anyonesolveit.service.login.dto.LoginResponse;
+import syleelsw.anyonesolveit.service.user.UserService;
 
 import java.util.Map;
 
@@ -40,6 +41,8 @@ class LoginControllerTest {
 
     @MockBean
     private LoginService loginService;
+    @MockBean
+    private UserService userService;
     @Autowired
     private SpringSecurityConfig springSecurityConfig;
 

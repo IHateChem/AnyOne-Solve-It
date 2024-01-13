@@ -64,6 +64,18 @@ class StudyServiceTest {
                 .members(members)
                 .period("1주").build();
     }
+    private StudyDto studyBuilder2(List<Long> members){ //설명에! 추가, level CONEPT으로 변경, freq 2번, Language JAVA
+        return StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울")).
+                description("알고리즘 스터디!")
+                .level(GoalTypes.valueOf("CONCEPT"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("2번").language(LanguageTypes.valueOf("JAVA"))
+                .members(members)
+                .period("1주").build();
+    }
     private StudyDto studyBuilder2(List<Long> members, Locations locations, GoalTypes level, LanguageTypes language){
         return StudyDto.builder()
                 .study_time("studyTime")
@@ -75,6 +87,71 @@ class StudyServiceTest {
                 .frequency("1번").language(language)
                 .members(members)
                 .period("1주").build();
+    }
+    @DisplayName("Repository의 FindStudiesByMember을 테스트 합니다. 유저가 속한 스터디 모두가 담겨야 합니다.")
+    @Test
+    void FindStudyByMemberTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
+        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto1);
+        //when
+        ResponseEntity<List<Study>> myStudySelf = studyService.getMyStudy(jwt);
+        ResponseEntity<List<Study>> myStudySelf2 = studyService.getMyStudy(jwt2);
+
+        //then
+        assertThat(myStudySelf.getBody()).extracting("id").containsExactlyInAnyOrder(response2.getBody().getId(), response.getBody().getId());
+        assertThat(myStudySelf2.getBody()).extracting("id").containsExactlyInAnyOrder(response.getBody().getId());
+    }
+
+    @DisplayName("Repository의 FindAllByUser을 테스트 합니다. 유저가 만든 스터디 모두가 담겨야 합니다.")
+    @Test
+    void FindSelfMadeTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
+        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto1);
+        //when
+        ResponseEntity<List<Study>> myStudySelf = studyService.getMyStudySelf(jwt);
+
+        //then
+        assertThat(myStudySelf.getBody()).extracting("id").containsExactlyInAnyOrder(response2.getBody().getId(), response.getBody().getId());
+    }
+    @DisplayName("PUT시 바뀌어야 합니다.")
+    @Test
+    void testPutStudy(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long StudyId = response.getBody().getId();
+        StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
+
+        studyService.putStudy(StudyId, studyDto1);
+        //when
+        Study studyResponse = (Study) studyService.getStudy(StudyId).getBody();
+        assertThat(studyResponse.getDescription()).isEqualTo(studyDto1.getDescription());
+        //then
     }
     @DisplayName("기본 검색시 시간 내림차순으로 리턴이 와야합니다.")
     @Test
@@ -96,7 +173,7 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);
@@ -123,13 +200,14 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.PYTHON);
         StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA);
+        StudyDto studyDto3 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA);
 
         studyService.createStudy(jwt, studyDto);
         studyService.createStudy(jwt, studyDto2);
-        studyService.createStudy(jwt, studyDto2);
+        studyService.createStudy(jwt, studyDto3);
         //when
 
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, Locations.ALL);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, Locations.ALL, null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(2);
@@ -145,7 +223,7 @@ class StudyServiceTest {
         UserInfo savedUser2 = userRepository.save(user2);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(0);
@@ -170,7 +248,7 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);
@@ -259,7 +337,7 @@ class StudyServiceTest {
         UserInfo savedUser = userRepository.save(user2);
         //given
         UserInfo user = mkUserInfo(true, "igy2840");
-        UserInfo savedUser2 = userRepository.save(user2);
+        UserInfo savedUser2 = userRepository.save(user);
         StudyDto studyDto = StudyDto.builder()
                 .study_time("studyTime")
                 .area(Locations.valueOf("서울")).
@@ -277,6 +355,7 @@ class StudyServiceTest {
 
 
         Study study = (Study) response.getBody();
+        log.info("Status: ", response);
         Long study_id = study.getId();
         ResponseEntity responseEntity = studyService.delStudy(jwt1, study_id);
         //포비든 뜨는지 확인

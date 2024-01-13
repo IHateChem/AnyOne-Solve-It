@@ -15,7 +15,8 @@ public class LoginBody {
     @NotNull
     private Provider provider;
     @Builder
-    private LoginBody(String authCode, Provider provider) {
+    private LoginBody(String authCode, String authState, Provider provider) {
+        this.authState = authState;
         this.authCode = authCode;
         this.provider = provider;
     }

@@ -12,11 +12,17 @@ import syleelsw.anyonesolveit.aops.RefreshTokenValidation;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
 import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
 import syleelsw.anyonesolveit.service.login.LoginService;
+import syleelsw.anyonesolveit.service.user.UserService;
 
 @RestController @RequestMapping("/api")
 @RequiredArgsConstructor @Slf4j
 public class LoginController {
     private final LoginService loginService;
+    private final UserService userService;
+    @GetMapping("/tests")
+    public ResponseEntity tests(){
+        return new ResponseEntity(userService.getSolvedProblem("kepler186f"), HttpStatus.OK);
+    }
 
     @PostMapping("/login")
     public ResponseEntity postLogin(@RequestBody @Validated LoginBody loginBody, BindingResult bindingResult){
