@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
+import syleelsw.anyonesolveit.etc.LanguageTypes;
+import syleelsw.anyonesolveit.etc.Locations;
 
 import java.util.List;
 @NoArgsConstructor @Getter @ToString
@@ -14,11 +16,11 @@ public class UserProfileDto {
     private String email;
     private String bjname;
     private String prefer_type;
-    private String area;
-    private List<String> languages;
+    private Locations area;
+    private List<LanguageTypes> languages;
     private boolean isFirst;
     @Builder
-    private UserProfileDto(Long id, String username, String email, String bjname, String prefer_type, String area, List<String> languages, boolean isFirst) {
+    private UserProfileDto(Long id, String username, String email, String bjname, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -46,7 +48,7 @@ public class UserProfileDto {
                 .isFirst(userInfo.isFirst())
                 .build();
     }
-    public UserInfo toUser(long id, Integer rank){
+    public UserInfo toUser(long id, Integer rank, SolvedProblemDto solvedProblem){
         return UserInfo.builder()
                 .id(id)
                 .username(this.username)
@@ -56,6 +58,8 @@ public class UserProfileDto {
                 .prefer_type(this.prefer_type)
                 .languages(this.languages)
                 .isFirst(this.isFirst)
+                .solvedProblem(solvedProblem.getSolvedProblems())
+                .solveProblemLevel(solvedProblem.getSolved())
                 .build();
     }
 }

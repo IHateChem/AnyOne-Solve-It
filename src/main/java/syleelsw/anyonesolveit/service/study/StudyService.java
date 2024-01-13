@@ -1,10 +1,12 @@
 package syleelsw.anyonesolveit.service.study;
 
+import com.sun.net.httpserver.HttpsServer;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
+import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,9 +40,18 @@ public class StudyService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final UserStudyJoinRepository userStudyJoinRepository;
+    private final ProblemSolvedCountUpdater problemSolvedCountUpdater;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
+    //todo
+    public ResponseEntity getMyStudy(String access) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Study>> studies = studyRepository.findStudiesByMember(user);
+        if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity(studies.get(), HttpStatus.OK) ;
+    }
 
     @PostConstruct
     public void init(){
@@ -51,6 +63,7 @@ public class StudyService {
         if(users==null || users.size() < members.size()){
             throw new IllegalArgumentException("존재하지 않는 유저가 있습니다.");
         }
+        log.info("유효한 유저입니다. ");
         return users.stream().collect(Collectors.toSet());
     }
     @Transactional
@@ -68,12 +81,14 @@ public class StudyService {
 
         Study study = Study.of(studyDto, members);
         study.setUser(user);
+        //스터디 평균 랭크, 푼 문제수 등 계산
+        problemSolvedCountUpdater.update(study);
         study = studyRepository.save(study);
         UserStudyJoin userStudyJoin = UserStudyJoin.builder().study(study).user(user).build();
         //serStudyJoinRepository.save(userStudyJoin);
         return new ResponseEntity(study, HttpStatus.OK);
     }
-    //todo
+    //todo: aop 걸어서 업데이트 하기.
     public ResponseEntity getStudy(Long id) {
         Study study = studyRepository.findById(id).get();
         return new ResponseEntity(study, HttpStatus.OK);
@@ -86,15 +101,14 @@ public class StudyService {
         }
     }
 
-    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, Locations area) {
-        List<Study> studies;
-        //todo: Repository에서 쿼리로 가져오게 해야할듯.
+    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, Locations area, String term) {
+        List<Study> studies = null;
+        PageRequest pageRequest = PageRequest.of((page-1)*maxPage, maxPage);
         switch (orderBy) {
-            case 1:
-                studies = listSplitter(studyRepository.searchStudyDefaultOrderBy1(language, level, area).get(), page);
-                break;
-            default:
-                studies = null;
+            case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, term, pageRequest).get();
+            case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, term, pageRequest).get();
+            case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, term, pageRequest).get();
+            default ->  new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity(studies, HttpStatus.OK);
     }
@@ -102,9 +116,25 @@ public class StudyService {
     public ResponseEntity getStudies(Integer orderBy, String term, Integer page, LanguageTypes language, GoalTypes level,Locations area) {
         return null;
     }
-
+    public void updateStudy(Study study, StudyDto studyDto, Set<UserInfo> members){
+        study.setTitle(studyDto.getTitle());
+        study.setDescription(studyDto.getDescription());
+        study.setLanguage(studyDto.getLanguage());
+        study.setLevel(studyDto.getLevel());
+        study.setArea(studyDto.getArea());
+        study.setMeeting_type(studyDto.getMeeting_type());
+        study.setPeriod(studyDto.getPeriod());
+        study.setMembers(members);
+        study.setFrequency(studyDto.getFrequency());
+        study.setStudy_time(studyDto.getStudy_time());
+    }
     public ResponseEntity putStudy(Long id, StudyDto studyDto) {
-        return null;
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(studyOptional.isEmpty()){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
+        Study study = studyOptional.get();
+        List<UserInfo> users = userRepository.findAllById(studyDto.getMembers());
+        updateStudy(study, studyDto, users.stream().collect(Collectors.toSet()));
+        return new ResponseEntity(HttpStatus.OK);
     }
     private boolean validateDeleteStudy(String access, Long id){
         Long userId = jwtTokenProvider.getUserId(access);
@@ -158,5 +188,13 @@ public class StudyService {
         //todo: 빈거처리 정해지면
         //if(problem == null) return new ResponseEntity()
         return new ResponseEntity(problem.toResponse(), HttpStatus.OK);
+    }
+
+    public ResponseEntity getMyStudySelf(String access) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Study>> studies = studyRepository.findAllByUser(user);
+        if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity(studies.get(), HttpStatus.OK) ;
     }
 }

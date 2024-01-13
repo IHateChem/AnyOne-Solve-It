@@ -51,13 +51,35 @@ public class LoginService {
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = userRepository.findUserByIdentifier(email + "_test");
         String username = "dltjrdn";
-        if(userInfo == null) { userInfo = join(email, username);}
+        if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);
     }
-    private ResponseEntity naverLogin(String authCode, String authState) {
+
+
+    private ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
+        UserInfo userInfo = userRepository.findUserByIdentifier(email+"_"+provider);
+        if(userInfo == null) { userInfo = join(email, username, provider, picture);}
+        String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
+
+        return new ResponseEntity<>(Map.of("username", username), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+    }
+
+    public ResponseEntity googleLogin(String authCode,Provider authProvider){
+        RestTemplate restTemplate = new RestTemplate();
+        //트라이 익셉션.
+        ResponseEntity<GoogleInfoResponse> infoResponse = tokenValidationService.getResponseFromGoogle(authCode, restTemplate);
+
+        GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
+        String email = googleInfoResponse.getEmail();
+        String username = googleInfoResponse.getName();
+        String picture = googleInfoResponse.getPicture();
+        return findUserAndJoin(email, username, authProvider, picture);
+    }
+
+    private ResponseEntity naverLogin(String authCode, String authState, Provider auth_provider) {
         RestTemplate restTemplate = new RestTemplate();
         //트라이 익셉션.
         ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate, authState);
@@ -66,33 +88,18 @@ public class LoginService {
         log.info("Nave user Info: {}", googleInfoResponse.toString());
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
-        return findUserAndJoin(email, username);
+        String picture = googleInfoResponse.getProfile_image();
+        return findUserAndJoin(email, username, auth_provider, picture);
     }
 
-    private ResponseEntity findUserAndJoin(String email, String username) {
-        UserInfo userInfo = userRepository.findUserByEmail(email);
-        if(userInfo == null) { userInfo = join(email, username);}
-        String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
-
-        return new ResponseEntity<>(Map.of("username", username), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
-    }
-
-    public ResponseEntity googleLogin(String authCode){
-        RestTemplate restTemplate = new RestTemplate();
-        //트라이 익셉션.
-        ResponseEntity<GoogleInfoResponse> infoResponse = tokenValidationService.getResponseFromGoogle(authCode, restTemplate);
-
-        GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
-        String email = googleInfoResponse.getEmail();
-        String username = googleInfoResponse.getName();
-        return findUserAndJoin(email, username);
-    }
-
-    public UserInfo join(String email, String username){
+    public UserInfo join(String email, String username, Provider provider, String picture){
         log.info("Join {}", email);
         UserInfo userInfo = UserInfo.builder()
                 .email(email)
                 .username(username)
+                .identifier(email+"_" + provider)
+                .isFirst(true)
+                .picture(picture)
                 .build();
         return userRepository.save(userInfo);
     }
@@ -108,9 +115,9 @@ public class LoginService {
     private ResponseEntity loginClassifier(String authCode, Provider provider, String authState) {
         switch (provider){
             case GOOGLE:
-                return googleLogin(authCode);
+                return googleLogin(authCode, provider);
             case NAVER:
-                return naverLogin(authCode, authState);
+                return naverLogin(authCode, authState, provider);
             default:
                 throw new IllegalStateException("잘못된 Provider 입니다.");
         }

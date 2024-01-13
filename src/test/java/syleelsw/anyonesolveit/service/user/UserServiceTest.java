@@ -10,7 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
+import syleelsw.anyonesolveit.etc.LanguageTypes;
+import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.etc.TokenType;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,13 +25,23 @@ class UserServiceTest {
     private UserService userService;
     @Autowired
     private JwtTokenProvider provider;
+    UserProfileDto userProfileDto(String bjName){
+        return UserProfileDto.builder()
+                .bjname(bjName)
+                .area(Locations.ALL)
+                .email("s@a.com")
+                .isFirst(true)
+                .languages(List.of(LanguageTypes.JAVA))
+                .prefer_type("대면")
+                .build();
+    }
     @DisplayName("프로파일 만들때 백준아이디가 유효하지 않으면 400을 뱉는다. ")
     @Test
     void setProfileTest(){
         String jwt = provider.createJwt(1L, TokenType.ACCESS);
         //given
-        UserProfileDto inValidUser = UserProfileDto.builder().bjname("syleelsw123").build();
-        UserProfileDto validUser = UserProfileDto.builder().bjname("syleelsw").build();
+        UserProfileDto inValidUser =userProfileDto("syleelsw123");
+        UserProfileDto validUser = userProfileDto("syleelsw");
         //when
 
         ResponseEntity responseEntity = userService.setProfile(jwt, inValidUser);

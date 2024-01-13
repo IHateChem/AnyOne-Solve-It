@@ -22,7 +22,7 @@ public class UserController {
 
     @PutMapping("/profile")
     public ResponseEntity putProfile(@RequestHeader String Access, @Validated @RequestBody UserProfileDto userProfile, BindingResult bindingResult){
-        return userService.setProfile(Access, userProfile);
+        return userService.putProfile(Access, userProfile);
     }
 
 }
