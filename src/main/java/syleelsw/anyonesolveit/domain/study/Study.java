@@ -18,7 +18,7 @@ import java.util.Set;
 
 @Entity
 @Getter
-@ToString
+@ToString(exclude = {"members", "user"})
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 
@@ -33,6 +33,7 @@ public class Study extends BaseEntity {
     private GoalTypes level;
     @Enumerated(EnumType.STRING)
     private Locations area;
+    private String city;
     private String meeting_type;
     private String period;
     private String frequency;

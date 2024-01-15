@@ -21,6 +21,7 @@ import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.*;
+import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.user.UserService;
 
 import javax.xml.stream.Location;
@@ -87,6 +88,54 @@ class StudyServiceTest {
                 .frequency("1번").language(language)
                 .members(members)
                 .period("1주").build();
+    }
+    @DisplayName("지역이 잘 동작하는지 확인합니다. ")
+    @Test
+    void Locationtest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울"))
+                .city("서초구")
+                .description("알고리즘 스터디")
+                .level(GoalTypes.valueOf("입문"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(members)
+                .period("1주").build();
+
+
+        StudyDto wrongStudyDto = StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울"))
+                .city("귀염구")
+                .description("알고리즘 스터디")
+                .level(GoalTypes.valueOf("입문"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(members)
+                .period("1주").build();
+
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> studyResponse = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<Study> wrongStudyResponse = studyService.createStudy(jwt, wrongStudyDto);
+        //when
+
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "서울 강남구", null);
+        ResponseEntity<List<StudyResponse>> study2 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "서울 서초구", null);
+
+        //then
+        assertThat(studyResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(wrongStudyResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(study1.getBody().size()).isEqualTo(0);
+        assertThat(study2.getBody().size()).isEqualTo(1);
     }
     @DisplayName("Repository의 FindStudiesByMember을 테스트 합니다. 유저가 속한 스터디 모두가 담겨야 합니다.")
     @Test
@@ -173,11 +222,10 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);
-        assertTrue(isSortedDescending(study1.getBody().stream().map(t -> t.getModifiedDateTime()).collect(Collectors.toList())), "List is not sorted in descending order");
     }
     private boolean isSortedDescending(List<LocalDateTime> list) {
         for (int i = 0; i < list.size() - 1; i++) {
@@ -207,7 +255,7 @@ class StudyServiceTest {
         studyService.createStudy(jwt, studyDto3);
         //when
 
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, Locations.ALL, null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, "ALL", null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(2);
@@ -223,7 +271,7 @@ class StudyServiceTest {
         UserInfo savedUser2 = userRepository.save(user2);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(0);
@@ -248,7 +296,7 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, null);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);

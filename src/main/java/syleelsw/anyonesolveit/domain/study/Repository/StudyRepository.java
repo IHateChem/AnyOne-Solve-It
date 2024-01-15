@@ -21,24 +21,28 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             " where (:language = 'ALL' or s.language = :language)" +
             " and (:level = 'ALL' or s.level = :level)" +
             " and (:area = 'ALL' or s.area = :area)" +
-            " and (:term is null or s.title LIKE %:term%)" +
+            " and (:city = 'ALL' or s.city = :city)" +
+            " and (:term is null or :term ='' or s.title LIKE %:term%)" +
             " order by s.modifiedDateTime DESC ", nativeQuery = false)
     Optional<List<Study>> searchStudyDefaultOrderBy1(
                 @Param("language") LanguageTypes language,
                 @Param("level") GoalTypes level,
                 @Param("area") Locations area,
+                @Param("city") String city,
                 @Param("term") String term,
                 Pageable pageable);
     @Query(value = "select s from Study s" +
             " where (:language = 'ALL' or s.language = :language)" +
             " and (:level = 'ALL' or s.level = :level)" +
             " and (:area = 'ALL' or s.area = :area)" +
-            " and (:term is null or s.title LIKE %:term%)" +
+            " and (:city = 'ALL' or s.city = :city)" +
+            " and (:term is null or :term ='' or s.title LIKE %:term%)" +
             " order by s.avg_rank DESC", nativeQuery = false)
     Optional<List<Study>> searchStudyDefaultOrderBy2(
             @Param("language") LanguageTypes language,
             @Param("level") GoalTypes level,
             @Param("area") Locations area,
+            @Param("city") String city,
             @Param("term") String term,
             Pageable pageable);
 
@@ -46,11 +50,13 @@ public interface StudyRepository extends JpaRepository<Study, Long> {
             " where (:language = 'ALL' or s.language = :language)" +
             " and (:level = 'ALL' or s.level = :level)" +
             " and (:area = 'ALL' or s.area = :area)" +
-            " and (:term is null or s.title LIKE %:term%)" +
+            " and (:city = 'ALL' or s.city = :city)" +
+            " and (:term is null or :term ='' or s.title LIKE %:term%)" +
             " order by s.avg_solved DESC", nativeQuery = false)
     Optional<List<Study>> searchStudyDefaultOrderBy3(
             @Param("language") LanguageTypes language,
             @Param("level") GoalTypes level,
             @Param("area") Locations area,
+            @Param("city") String city,
             @Param("term") String term,
             Pageable pageable);}

@@ -26,7 +26,10 @@ import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
+import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
+import syleelsw.anyonesolveit.service.study.dto.StudyResponseMember;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
+import syleelsw.anyonesolveit.service.validation.ValidationService;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +44,7 @@ public class StudyService {
     private final UserRepository userRepository;
     private final UserStudyJoinRepository userStudyJoinRepository;
     private final ProblemSolvedCountUpdater problemSolvedCountUpdater;
+    private final ValidationService validationService;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
@@ -79,6 +83,14 @@ public class StudyService {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
 
+        //잘못된 지역구 체크
+
+        try{
+            validationService.validateLocations(studyDto.getArea(), studyDto.getCity());
+        }catch (IllegalArgumentException e){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
         Study study = Study.of(studyDto, members);
         study.setUser(user);
         //스터디 평균 랭크, 푼 문제수 등 계산
@@ -101,16 +113,38 @@ public class StudyService {
         }
     }
 
-    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, Locations area, String term) {
+
+    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, String locations, String term) {
         List<Study> studies = null;
+        String[] split = locations.split(" ");
+        String city;
+        if(split.length >2 || (split.length == 1 && !split[0].equals("ALL") || split.length==0)){
+            log.info("잘못된 Locations: {}", split);
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }else if(split.length == 1){
+            city =  "ALL";
+        }else{
+            city = split[1];
+        }
+        Locations area = Locations.valueOf(split[0]);
+        log.info("Area: {}", area);
+        log.info("City: {}", city);
+        try{
+            validationService.validateLocations(area, city);
+        }catch (IllegalArgumentException e){
+            log.info("validationLocation 에서 걸림.");
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
         PageRequest pageRequest = PageRequest.of((page-1)*maxPage, maxPage);
         switch (orderBy) {
-            case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, term, pageRequest).get();
-            case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, term, pageRequest).get();
-            case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, term, pageRequest).get();
+            case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, city, term, pageRequest).get();
+            case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, city, term, pageRequest).get();
+            case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, city, term, pageRequest).get();
             default ->  new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity(studies, HttpStatus.OK);
+        log.info("스터디t: {}", studies);
+        return new ResponseEntity(studies.stream().map(study -> StudyResponse.of(study)).collect(Collectors.toList()), HttpStatus.OK);
     }
 
     public ResponseEntity getStudies(Integer orderBy, String term, Integer page, LanguageTypes language, GoalTypes level,Locations area) {

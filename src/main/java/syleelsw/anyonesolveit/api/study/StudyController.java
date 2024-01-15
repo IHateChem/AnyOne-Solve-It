@@ -19,7 +19,7 @@ public class StudyController {
     private final StudyService studyService;
     @GetMapping("/studies")
     public ResponseEntity getStudies(@RequestParam Integer order_by, @RequestParam String term, @RequestParam Integer page,
-                                     @RequestParam LanguageTypes language, @RequestParam GoalTypes level, @RequestParam Locations area){
+                                     @RequestParam LanguageTypes language, @RequestParam GoalTypes level, @RequestParam String area){
 
         return studyService.findStudy(order_by, page, language, level,  area, term);
     }

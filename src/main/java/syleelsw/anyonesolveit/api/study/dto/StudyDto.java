@@ -21,15 +21,17 @@ public class StudyDto {
     private LanguageTypes language;
     private GoalTypes level;
     private Locations area;
+    private String city;
     private String meeting_type;
     private String period;
     private String frequency;
     private String study_time;
     private List<Long> members;
     @Builder
-    private StudyDto(String title, String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
+    private StudyDto(String title,String city,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
         this.title = title;
         this.description = description;
+        this.city = city;
         this.language = language;
         this.level = level;
         this.area = area;
