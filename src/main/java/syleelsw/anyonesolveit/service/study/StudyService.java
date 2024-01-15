@@ -1,10 +1,8 @@
 package syleelsw.anyonesolveit.service.study;
 
-import com.sun.net.httpserver.HttpsServer;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
@@ -12,14 +10,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import syleelsw.anyonesolveit.api.study.dto.Problem;
+import syleelsw.anyonesolveit.domain.study.Problem;
 import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.ProblemRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyProblemRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.GoalTypes;
@@ -27,7 +28,6 @@ import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
-import syleelsw.anyonesolveit.service.study.dto.StudyResponseMember;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
@@ -44,7 +44,9 @@ public class StudyService {
     private final UserRepository userRepository;
     private final UserStudyJoinRepository userStudyJoinRepository;
     private final ProblemSolvedCountUpdater problemSolvedCountUpdater;
+    private final ProblemRepository problemRepository;
     private final ValidationService validationService;
+    private final StudyProblemRepository studyProblemRepository;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
@@ -119,7 +121,6 @@ public class StudyService {
         String[] split = locations.split(" ");
         String city;
         if(split.length >2 || (split.length == 1 && !split[0].equals("ALL") || split.length==0)){
-            log.info("잘못된 Locations: {}", split);
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }else if(split.length == 1){
             city =  "ALL";
@@ -193,35 +194,50 @@ public class StudyService {
         storeProblem.put(id, forStoreProblem);
     }
 
-    public ResponseEntity getStudyProblem(Long id, Integer problem) {
-        String url = "https://solved.ac/api/v3/problem/show?problemId=" + problem;
+    public ResponseEntity getStudyProblem(Long id, Integer problemId) {
 
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> request = new HttpEntity<>(headers);
-        // HTTP POST 요청 보내기
-        try{
-            ResponseEntity<SolvedacItem> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    SolvedacItem.class
-            );
-            SolvedacItem solvedacItem = response.getBody();
-            saveProblem(id, solvedacItem);
-            return new ResponseEntity(ProblemResponse.of(solvedacItem), HttpStatus.OK);
-        }catch (HttpClientErrorException e){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        Optional<Problem> problem = problemRepository.findById(problemId);
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        ProblemResponse problemResponse;
+        if(problem.isEmpty()){
+            log.info("없는 문제.. {}", problemId);
+            String url = "https://solved.ac/api/v3/problem/show?problemId=" + problemId;
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> request = new HttpEntity<>(headers);
+            // HTTP POST 요청 보내기
+            try{
+                ResponseEntity<SolvedacItem> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        request,
+                        SolvedacItem.class
+                );
+                SolvedacItem solvedacItem = response.getBody();
+                problemResponse = ProblemResponse.of(solvedacItem);
+                problem = Optional.of(problemRepository.save(Problem.of(problemResponse)));
+            }catch (HttpClientErrorException e){
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
+        }else {
+            problemResponse = ProblemResponse.of(problem.get());
         }
+        StudyProblemEntity studyProblemEntity = StudyProblemEntity.builder().id(id +"_"+problemId).problem(problem.get()).study(studyOptional.get()).build();
+        studyProblemRepository.save(studyProblemEntity);
+        return new ResponseEntity(problemResponse, HttpStatus.OK);
+
 
     }
 
     public ResponseEntity getSuggestion(Long id) {
-        Problem problem = storeProblem.get(id);
-        //todo: 빈거처리 정해지면
-        //if(problem == null) return new ResponseEntity()
-        return new ResponseEntity(problem.toResponse(), HttpStatus.OK);
+        Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByStudyIdDesc(id);
+        if(top10ByIdDesc.isEmpty()){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }else{
+            return new ResponseEntity(top10ByIdDesc.get(), HttpStatus.OK);
+        }
+
     }
 
     public ResponseEntity getMyStudySelf(String access) {

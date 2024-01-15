@@ -18,6 +18,7 @@ import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.*;
@@ -56,8 +57,9 @@ class StudyServiceTest {
     private StudyDto studyBuilder(List<Long> members){
         return StudyDto.builder()
                 .study_time("studyTime")
-                .area(Locations.valueOf("서울")).
-                description("알고리즘 스터디")
+                .area(Locations.valueOf("서울"))
+                .city("강남구")
+                .description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
@@ -70,6 +72,7 @@ class StudyServiceTest {
                 .study_time("studyTime")
                 .area(Locations.valueOf("서울")).
                 description("알고리즘 스터디!")
+                .city("강남구")
                 .level(GoalTypes.valueOf("CONCEPT"))
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
@@ -77,17 +80,54 @@ class StudyServiceTest {
                 .members(members)
                 .period("1주").build();
     }
-    private StudyDto studyBuilder2(List<Long> members, Locations locations, GoalTypes level, LanguageTypes language){
+    private StudyDto studyBuilder2(List<Long> members, Locations locations, GoalTypes level, LanguageTypes language, String city){
         return StudyDto.builder()
                 .study_time("studyTime")
                 .area(locations).
                 description("알고리즘 스터디")
+                .city(city)
                 .level(level)
                 .title("파이썬 알고리즘 스터디")
                 .meeting_type("대면")
                 .frequency("1번").language(language)
                 .members(members)
                 .period("1주").build();
+    }
+    @DisplayName("이문제 어때요 잘되는지(잘 db에 없는게 저장되는지, 기존에 있으면 잘 처리되는지) 확인 / 최신순으로 10개 나오는지 확인")
+    @Test
+    void suggestionTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        log.info("{}", response);
+        ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
+        ResponseEntity<ProblemResponse> valid_response2 = studyService.getStudyProblem(response.getBody().getId(), 1000);
+        ResponseEntity<ProblemResponse> valid_response3 = studyService.getStudyProblem(response.getBody().getId(), 1000);
+        ResponseEntity<ProblemResponse> valid_response4 = studyService.getStudyProblem(response.getBody().getId(), 1001);
+        ResponseEntity<ProblemResponse> valid_response5 = studyService.getStudyProblem(response.getBody().getId(), 1002);
+        ResponseEntity<ProblemResponse> valid_response6 = studyService.getStudyProblem(response.getBody().getId(), 1003);
+        ResponseEntity<ProblemResponse> valid_response7 = studyService.getStudyProblem(response.getBody().getId(), 1004);
+        ResponseEntity<ProblemResponse> valid_response8 = studyService.getStudyProblem(response.getBody().getId(), 1005);
+        ResponseEntity<ProblemResponse> valid_response9 = studyService.getStudyProblem(response.getBody().getId(), 1006);
+        ResponseEntity<ProblemResponse> valid_response10 = studyService.getStudyProblem(response.getBody().getId(), 1007);
+        ResponseEntity<ProblemResponse> valid_response11 = studyService.getStudyProblem(response.getBody().getId(), 1008);
+        ResponseEntity<ProblemResponse> valid_response12 = studyService.getStudyProblem(response.getBody().getId(), 1009);
+
+        //when
+        ResponseEntity<List<StudyProblemEntity>> suggestion = studyService.getSuggestion(response.getBody().getId());
+
+        //then
+        assertThat(valid_response1.getBody().getProblemId()).isEqualTo(1000);
+        assertThat(valid_response2.getBody().getProblemId()).isEqualTo(1000);
+        assertThat(suggestion.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(suggestion.getBody().size()).isEqualTo(10);
+        assertThat(suggestion.getBody().stream().map(t-> t.getProblem().getId()).collect(Collectors.toList())).isSorted();
     }
     @DisplayName("지역이 잘 동작하는지 확인합니다. ")
     @Test
@@ -246,9 +286,9 @@ class StudyServiceTest {
         UserInfo savedUser2 = userRepository.save(user2);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
-        StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.PYTHON);
-        StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA);
-        StudyDto studyDto3 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA);
+        StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.PYTHON, "강남구");
+        StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA, "강남구");
+        StudyDto studyDto3 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA, "강남구");
 
         studyService.createStudy(jwt, studyDto);
         studyService.createStudy(jwt, studyDto2);

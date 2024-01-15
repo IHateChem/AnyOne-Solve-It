@@ -1,22 +1,29 @@
-package syleelsw.anyonesolveit.api.study.dto;
+package syleelsw.anyonesolveit.domain.study;
 
-import lombok.Builder;
-import lombok.Getter;
+import jakarta.persistence.*;
+import lombok.*;
+import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
+@Entity
 @Getter
+@ToString
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Problem{
-    private LocalDateTime expired;
+    @Id
+    private Integer id;
     private String title;
+
+    @ElementCollection(fetch = FetchType.LAZY)
     private List<String> types;
     private String link;
     private Integer rank;
     @Builder
-    public Problem(LocalDateTime expired, String title, List<String> types, String link, Integer rank) {
-        this.expired = expired;
+    public Problem(Integer problemId, String title, List<String> types, String link, Integer rank) {
         this.title = title;
+        this.id = problemId;
         this.types = types;
         this.link = link;
         this.rank = rank;
@@ -24,13 +31,14 @@ public class Problem{
 
     public static Problem of(ProblemResponse problemResponse){
         return builder()
-                .expired(LocalDateTime.now().plusMinutes(5))
                 .link(problemResponse.getLink())
+                .problemId(problemResponse.getProblemId())
                 .title(problemResponse.getTitle())
                 .types(problemResponse.getTypes())
                 .rank(problemResponse.getRank())
                 .build();
     }
+
     public ProblemResponse toResponse(){
         return ProblemResponse.builder()
                 .title(title)
