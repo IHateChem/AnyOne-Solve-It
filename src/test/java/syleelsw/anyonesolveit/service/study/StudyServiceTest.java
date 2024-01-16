@@ -11,11 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
+import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
 import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
+import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
@@ -45,6 +48,8 @@ class StudyServiceTest {
     private StudyService studyService;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    private ParticipationRepository participationRepository;
     @Value("${anyone.page}")
     private Integer page;
     public UserInfo mkUserInfo(Boolean isFirst, String bjName){
@@ -93,6 +98,125 @@ class StudyServiceTest {
                 .members(members)
                 .period("1주").build();
     }
+
+    @DisplayName("참가신청 취소 테스트 검색이 안되어야 한다. ")
+    @Test
+    void 참가취소test(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        //when
+        ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
+        ResponseEntity<String> succResponse = studyService.makeParticipation(jwt, succParticipationDTO);
+        ResponseEntity succDeleteResponse = studyService.deleteParticipation(jwt, studyId);
+
+        //then
+        assertThat(succResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(succDeleteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String particpationId = succResponse.getBody();
+        assertThat(participationRepository.findById(particpationId).isPresent()).isFalse();
+    }
+    @DisplayName("참가 신청 테스트. 존재하는 스터디가 아니면 400반환, 존재하는 스터디를 넣었을 경우에는 repository에 추가가 되어야 한다.")
+    @Test
+    void ParticipationTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        //when
+        ParticipationDTO failParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId+100).build();
+        ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
+        ResponseEntity failResponse = studyService.makeParticipation(jwt, failParticipationDTO);
+        ResponseEntity<String> succResponse = studyService.makeParticipation(jwt, succParticipationDTO);
+
+        //then
+
+        assertThat(failResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(succResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String particpationId = succResponse.getBody();
+        assertThat(participationRepository.findById(particpationId).isPresent()).isTrue();
+    }
+
+
+    @DisplayName("이문제 어때요 삭제를 테스트합니다. 스터디 아닌 사람이 요청시 401반환")
+    @Test
+    void DelHowAboutTestUnAuthorized(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+
+        ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
+        ResponseEntity<ProblemResponse> valid_response4 = studyService.getStudyProblem(response.getBody().getId(), 1001);
+        ResponseEntity<ProblemResponse> valid_response5 = studyService.getStudyProblem(response.getBody().getId(), 1002);
+
+        //when
+
+        ResponseEntity responseEntity = studyService.deleteStudyProblem(jwt, studyId, 1000);
+        ResponseEntity FailresponseEntity = studyService.deleteStudyProblem(jwt2, studyId, 1000);
+
+        ResponseEntity<List<StudyProblemEntity>> suggestion = studyService.getSuggestion(studyId);
+
+
+
+        //then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(FailresponseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(suggestion.getBody()).hasSize(2); //삭제 완료 여부 확인.
+        assertThat(suggestion.getBody()).extracting("id").contains(studyId+"_" +1001, studyId+"_" +1002); //삭제 완료 여부 확인.
+    }
+
+
+    @DisplayName("이문제 어때요 삭제를 테스트합니다. 요청한적 없는 문제 삭제시 400반환 요청한적 있으면 200반환 ")
+    @Test
+    void DelHowAboutTestBadRequest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+
+        ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
+        ResponseEntity<ProblemResponse> valid_response4 = studyService.getStudyProblem(response.getBody().getId(), 1001);
+        ResponseEntity<ProblemResponse> valid_response5 = studyService.getStudyProblem(response.getBody().getId(), 1002);
+
+        //when
+        ResponseEntity successDeleteResponse = studyService.deleteStudyProblem(jwt, studyId, 1000);
+        ResponseEntity failDeleteResponse = studyService.deleteStudyProblem(jwt, studyId, 1005);
+
+
+        //then
+        assertThat(successDeleteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(failDeleteResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+
+
     @DisplayName("이문제 어때요 잘되는지(잘 db에 없는게 저장되는지, 기존에 있으면 잘 처리되는지) 확인 / 최신순으로 10개 나오는지 확인")
     @Test
     void suggestionTest(){

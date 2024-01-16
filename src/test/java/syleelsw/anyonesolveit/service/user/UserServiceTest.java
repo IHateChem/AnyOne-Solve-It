@@ -8,11 +8,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
+import syleelsw.anyonesolveit.api.study.dto.StudyDto;
+import syleelsw.anyonesolveit.api.user.dto.ParticipationResponse;
 import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
-import syleelsw.anyonesolveit.etc.JwtTokenProvider;
-import syleelsw.anyonesolveit.etc.LanguageTypes;
-import syleelsw.anyonesolveit.etc.Locations;
-import syleelsw.anyonesolveit.etc.TokenType;
+import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.user.UserInfo;
+import syleelsw.anyonesolveit.domain.user.UserRepository;
+import syleelsw.anyonesolveit.etc.*;
+import syleelsw.anyonesolveit.service.study.StudyService;
 
 import java.util.List;
 
@@ -25,6 +29,12 @@ class UserServiceTest {
     private UserService userService;
     @Autowired
     private JwtTokenProvider provider;
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private StudyService studyService;
     UserProfileDto userProfileDto(String bjName){
         return UserProfileDto.builder()
                 .bjname(bjName)
@@ -35,6 +45,61 @@ class UserServiceTest {
                 .prefer_type("대면")
                 .build();
     }
+    public UserInfo mkUserInfo(Boolean isFirst, String bjName){
+        return UserInfo.builder()
+                .email("syleelsw@snu.ac.kr")
+                .isFirst(isFirst)
+                .bjname(bjName)
+                .build();
+    }
+
+    private StudyDto studyBuilder(List<Long> members){
+        return StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울"))
+                .city("강남구")
+                .description("알고리즘 스터디")
+                .level(GoalTypes.valueOf("입문"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type("대면")
+                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .members(members)
+                .period("1주").build();
+    }
+
+    @DisplayName("참가 신청 확인. 2번의 참가신청을 했으면 2개의 참가신청이 있음을 뱉는다.")
+    @Test
+    void 참가신청test(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        Long studyId2 = response2.getBody().getId();
+
+        //when
+        ResponseEntity responseEntity = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId).message("HI").build());
+        ResponseEntity responseEntity2 = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId2).message("HI").build());
+        ResponseEntity<List<ParticipationResponse>> participationResponse = userService.getParticipation(jwt2);
+
+        //then
+        Long userId = savedUser2.getId();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(participationResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(participationResponse.getBody()).hasSize(2);
+        assertThat(participationResponse.getBody()).extracting("participationId").contains(userId+"_"+studyId, userId+"_"+studyId2);
+
+    }
+
+
     @DisplayName("프로파일 만들때 백준아이디가 유효하지 않으면 400을 뱉는다. ")
     @Test
     void setProfileTest(){

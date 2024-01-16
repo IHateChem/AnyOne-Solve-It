@@ -6,21 +6,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
+import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Problem;
 import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.ProblemRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyProblemRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
+import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.GoalTypes;
@@ -47,10 +52,10 @@ public class StudyService {
     private final ProblemRepository problemRepository;
     private final ValidationService validationService;
     private final StudyProblemRepository studyProblemRepository;
+    private final ParticipationRepository participationRepository;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
-    //todo
     public ResponseEntity getMyStudy(String access) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
@@ -193,7 +198,7 @@ public class StudyService {
         Problem forStoreProblem = Problem.of(ProblemResponse.of(problem));
         storeProblem.put(id, forStoreProblem);
     }
-
+    //todo? id와 스터디 검증?
     public ResponseEntity getStudyProblem(Long id, Integer problemId) {
 
         Optional<Problem> problem = problemRepository.findById(problemId);
@@ -246,5 +251,68 @@ public class StudyService {
         Optional<List<Study>> studies = studyRepository.findAllByUser(user);
         if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(studies.get(), HttpStatus.OK) ;
+    }
+
+    public ResponseEntity deleteStudyProblem(String access, Long id, Integer problem) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        Optional<UserInfo> user = userRepository.findById(userId);
+
+        //스터디 원이 아닌 사람이 요청하면 권한 없음
+        try{
+            validationService.validateUserInStudy(user.get(), id);
+        }catch (IllegalAccessException e){
+            return new ResponseEntity(HttpStatus.UNAUTHORIZED);
+        }
+        Optional<StudyProblemEntity> byId = studyProblemRepository.findById(id + "_" + problem);
+
+        //올라간 적 없는 문제 삭제 요청시 BadRequest
+        if(byId.isEmpty()){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        studyProblemRepository.delete(byId.get());
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public ResponseEntity makeParticipation(String access, ParticipationDTO participationDTO) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        //스터디가 존재해야 신청할 수 있다.
+        Long studyId = participationDTO.getStudyId();
+        try {
+            validationService.isValidStudy(studyId);
+        } catch (IllegalAccessException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        UserInfo user = userRepository.findById(userId).get();
+        Study study = studyRepository.findById(studyId).get();
+
+
+        Participation save = participationRepository.save(Participation.builder()
+                .id(userId+"_"+studyId)
+                .message(participationDTO.getMessage())
+                .user(user)
+                .study(study)
+                .state(ParticipationStates.대기중)
+                .build());
+
+        return new ResponseEntity(save.getId(), HttpStatus.OK);
+
+    }
+
+    public ResponseEntity deleteParticipation(String access, Long studyId) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        //스터디가 존재해야 신청할 수 있다.
+        try {
+            validationService.isValidStudy(studyId);
+        } catch (IllegalAccessException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        Optional<Participation> byId = participationRepository.findById(userId + "_" + studyId);
+        if(byId.isEmpty()){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        participationRepository.delete(byId.get());
+        return new ResponseEntity(HttpStatus.OK);
     }
 }

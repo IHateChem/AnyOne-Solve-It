@@ -11,9 +11,12 @@ import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
+import syleelsw.anyonesolveit.api.user.dto.ParticipationResponse;
 import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
 import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
+import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
@@ -22,12 +25,14 @@ import syleelsw.anyonesolveit.service.validation.ValidationService;
 import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor @Slf4j
 public class UserService {
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
     private final ValidationService validationService;
+    private final ParticipationRepository participationRepository;
     private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
@@ -118,4 +123,17 @@ public class UserService {
         };
     }
 
+    public ResponseEntity getParticipation(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Participation>> optionalParticipations = participationRepository.findAllByUser(user);
+
+        List<ParticipationResponse> ret;
+        if(optionalParticipations.isEmpty()){
+            ret = new ArrayList<>();
+        }else{
+            ret = optionalParticipations.get().stream().map(t-> new ParticipationResponse(t, userId)).collect(Collectors.toList());
+        }
+        return new ResponseEntity(ret, HttpStatus.OK);
+    }
 }

@@ -25,4 +25,8 @@ public class UserController {
         return userService.putProfile(Access, userProfile);
     }
 
+    @GetMapping("/participations") //내 스터디에 참가신청한 목록보기
+    public ResponseEntity getParticipations(@RequestHeader String Access){
+        return userService.getParticipation(Access);
+    }
 }

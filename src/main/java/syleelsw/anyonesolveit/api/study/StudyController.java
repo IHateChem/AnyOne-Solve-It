@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
@@ -46,11 +47,24 @@ public class StudyController {
     public ResponseEntity getStudyProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
         return studyService.getStudyProblem(id, problem);
     }
+    @DeleteMapping("/studies/{id}/suggestion/{problem}")
+    public ResponseEntity deleteStudyProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
+        return studyService.deleteStudyProblem(Access, id, problem);
+    }
+
 
     @GetMapping("/studies/{id}/suggestion")
     public ResponseEntity getSuggestion(@RequestHeader String Access, @PathVariable Long id){
         return studyService.getSuggestion(id);
     }
+    @PostMapping("/participation")
+    public ResponseEntity makeParticipation(@RequestHeader String Access, @RequestBody ParticipationDTO participationDTO){
+        return studyService.makeParticipation(Access, participationDTO);
+    }
 
+    @DeleteMapping("/participation")
+    public ResponseEntity deleteParticipation(@RequestHeader String Access, @RequestParam Long studyId){
+        return studyService.deleteParticipation(Access, studyId);
+    }
 
 }

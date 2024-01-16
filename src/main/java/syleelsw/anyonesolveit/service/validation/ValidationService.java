@@ -1,28 +1,27 @@
 package syleelsw.anyonesolveit.service.validation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-@Service @Slf4j
+@Service @Slf4j @RequiredArgsConstructor
 public class ValidationService {
     private String solvedacAPI = "https://solved.ac/api/v3";
+    private final StudyRepository studyRepository;
     private boolean isValidateBJId(String bjId){
         String url = solvedacAPI + "/search/user?query=" + bjId;
         RestTemplate restTemplate = new RestTemplate();
@@ -137,6 +136,19 @@ public class ValidationService {
         }
         if(!cities.stream().anyMatch(t -> t.equals(city))){
             throw new IllegalArgumentException("잘못된 도시명 입니다");
+        }
+    }
+
+    public void validateUserInStudy(UserInfo user, Long id) throws IllegalAccessException {
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(! (studyOptional.isPresent() && studyOptional.get().getMembers().contains(user))){
+            throw new IllegalAccessException("삭제 권한이 없습니다.");
+        }
+    }
+
+    public void isValidStudy(Long studyId) throws IllegalAccessException {
+        if(studyRepository.findById(studyId).isEmpty()){
+            throw new IllegalAccessException("존재하지 않는 스터디 입니다.");
         }
     }
 }
