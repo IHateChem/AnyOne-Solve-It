@@ -123,11 +123,15 @@ public class UserService {
         };
     }
 
-    public ResponseEntity getParticipation(String access) {
+    public ResponseEntity getMyApply(String access) {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<List<Participation>> optionalParticipations = participationRepository.findAllByUser(user);
 
+        return getParticipationListResponseEntity(userId, optionalParticipations);
+    }
+
+    private ResponseEntity getParticipationListResponseEntity(Long userId, Optional<List<Participation>> optionalParticipations) {
         List<ParticipationResponse> ret;
         if(optionalParticipations.isEmpty()){
             ret = new ArrayList<>();
@@ -135,5 +139,13 @@ public class UserService {
             ret = optionalParticipations.get().stream().map(t-> new ParticipationResponse(t, userId)).collect(Collectors.toList());
         }
         return new ResponseEntity(ret, HttpStatus.OK);
+    }
+
+    public ResponseEntity getMyParticipation(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Participation>> optionalParticipations = participationRepository.findMyParticipationsByUser(user);
+
+        return getParticipationListResponseEntity(userId, optionalParticipations);
     }
 }

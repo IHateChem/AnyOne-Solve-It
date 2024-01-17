@@ -7,6 +7,7 @@ import lombok.ToString;
 import org.springframework.security.core.parameters.P;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 
 @Getter
@@ -14,21 +15,30 @@ import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 public class ParticipationResponse {
     private String participationId;
     private Long userId;
+    private String userName;
     private String message;
     private ParticipationStates state;
+    private String studyName;
+    private Long studyId;
     public ParticipationResponse(Participation participation, Long id){
         this.participationId = participation.getId();
+        this.userName = participation.getUser().getUsername();
         this.userId = id;
         this.message = participation.getMessage();
         this.state = participation.getState();
+        this.studyId = participation.getStudy().getId();
+        this.studyName = participation.getStudy().getTitle();
 
     }
     @Builder
-    public ParticipationResponse(String participationId, Long userId, String message, ParticipationStates state) {
+    public ParticipationResponse(String participationId, String userName, Long userId, String message, ParticipationStates state, String studyName, Long studyId) {
         this.participationId = participationId;
         this.userId = userId;
+        this.userName = userName;
         this.message = message;
         this.state = state;
+        this.studyName = studyName;
+        this.studyId = studyId;
     }
 
 

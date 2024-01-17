@@ -25,8 +25,15 @@ public class UserController {
         return userService.putProfile(Access, userProfile);
     }
 
-    @GetMapping("/participations") //내 스터디에 참가신청한 목록보기
-    public ResponseEntity getParticipations(@RequestHeader String Access){
-        return userService.getParticipation(Access);
+    @GetMapping("/mypage/apply") //내가 스터디에 참가신청한것들 목록보기
+    public ResponseEntity getMyApply(@RequestHeader String Access){
+        return userService.getMyApply(Access);
+    }
+
+
+
+    @GetMapping("/mypage/participation") //내가 스터디에 참가신청한것들 목록보기
+    public ResponseEntity getMyParticipation(@RequestHeader String Access){
+        return userService.getMyParticipation(Access);
     }
 }

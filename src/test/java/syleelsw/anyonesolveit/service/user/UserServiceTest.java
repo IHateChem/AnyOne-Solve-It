@@ -67,6 +67,41 @@ class UserServiceTest {
                 .period("1주").build();
     }
 
+    @DisplayName("내가 만든 스터디에 지원한 사람들 확인테스트 ")
+    @Test
+    void 스터디지원자test(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        Long studyId2 = response2.getBody().getId();
+
+        //when
+        ResponseEntity responseEntity = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId).message("HI").build());
+        ResponseEntity responseEntity2 = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId2).message("HI").build());
+
+        ResponseEntity<List<ParticipationResponse>> participationResponse = userService.getMyParticipation(jwt);
+        ResponseEntity<List<ParticipationResponse>> participationResponse2 = userService.getMyParticipation(jwt2);
+
+        //then
+        Long userId = savedUser2.getId();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(participationResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(participationResponse.getBody()).hasSize(2);
+        assertThat(participationResponse.getBody()).extracting("participationId").contains(userId+"_"+studyId, userId+"_"+studyId2);
+        assertThat(participationResponse2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(participationResponse2.getBody()).hasSize(0);
+    }
+
     @DisplayName("참가 신청 확인. 2번의 참가신청을 했으면 2개의 참가신청이 있음을 뱉는다.")
     @Test
     void 참가신청test(){
@@ -87,7 +122,7 @@ class UserServiceTest {
         //when
         ResponseEntity responseEntity = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId).message("HI").build());
         ResponseEntity responseEntity2 = studyService.makeParticipation(jwt2, ParticipationDTO.builder().studyId(studyId2).message("HI").build());
-        ResponseEntity<List<ParticipationResponse>> participationResponse = userService.getParticipation(jwt2);
+        ResponseEntity<List<ParticipationResponse>> participationResponse = userService.getMyApply(jwt2);
 
         //then
         Long userId = savedUser2.getId();
