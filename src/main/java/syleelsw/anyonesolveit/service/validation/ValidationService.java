@@ -7,6 +7,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
@@ -26,30 +28,28 @@ public class ValidationService {
     private String solvedacAPI = "https://solved.ac/api/v3";
     private final StudyRepository studyRepository;
     private final ParticipationRepository participationRepository;
-    private boolean isValidateBJId(String bjId){
-        String url = solvedacAPI + "/search/user?query=" + bjId;
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = null;
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> request = new HttpEntity<>(json, headers);
-        // HTTP POST 요청 보내기
-        ResponseEntity<UserSearchDto> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                UserSearchDto.class
-        );
-        log.info(response.toString());
-        Long count = response.getBody().getCount();
-        log.info("{}", count > 0);
-        return count != null && count > 0;
+    private final BaekjoonInformationRepository baekjoonInformationRepository;
+    public boolean isValidateBJId(String bjId){
+        Optional<BaekjoonInformation> bjInfo = baekjoonInformationRepository.findById(bjId);
+        if(bjInfo.isPresent()){ //캐쉬 가능
+            return true;
+        }
+
+        ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
+        HttpStatusCode statusCode = response.getStatusCode();
+        if (statusCode.equals(HttpStatus.OK)) {
+            BaekjoonInformation myBjInfo = BaekjoonInformation.builder().bjname(bjId).rank(response.getBody().getRank()).solved(response.getBody().getSolvedCount()).build();
+            baekjoonInformationRepository.save(myBjInfo);
+        } else if (statusCode.equals(HttpStatus.NOT_FOUND)) {
+            return false;
+        } else {
+            throw new IllegalStateException("SolvedDac 서버 확인하세요");
+        }
+        return true;
     }
 
-
-    private Integer getUserRankFromAPI(String bjName){
-        String url = solvedacAPI + "/user/show?handle=" + bjName;
+    public ResponseEntity<SolvedacUserInfoDto> getSolvedacUserInfoDtoResponseEntity(String bjId) {
+        String url = solvedacAPI + "/user/show?handle=" + bjId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -61,8 +61,13 @@ public class ValidationService {
                 request,
                 SolvedacUserInfoDto.class
         );
-        log.info(response.getBody().toString());
-        return response.getBody().getRank();
+        return response;
+    }
+
+
+    private Integer getUserRankFromAPI(String bjName){
+        BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(bjName).get();
+        return baekjoonInformation.getRank();
     }
 
     public Integer isValidateBJIdAndGetRank(String bjName) {
@@ -70,77 +75,6 @@ public class ValidationService {
             return null;
         }
         return getUserRankFromAPI(bjName);
-    }
-
-    public void validateLocations(Locations location, String city){
-        List cities;
-        switch (location){
-            case ALL -> {
-                return;
-            }
-            case 서울, 서울특별시 -> cities = List.of(
-                    "강남구",
-                    "강동구",
-                    "강북구",
-                    "강서구",
-                    "관악구",
-                    "광진구",
-                    "구로구",
-                    "금천구",
-                    "노원구",
-                    "도봉구",
-                    "동대문구",
-                    "동작구",
-                    "마포구",
-                    "서대문구",
-                    "서초구",
-                    "성동구",
-                    "성북구",
-                    "송파구",
-                    "양천구",
-                    "영등포구",
-                    "용산구",
-                    "은평구",
-                    "종로구",
-                    "중구",
-                    "중랑구");
-            case 경기도 -> cities = List.of(
-                    "수원시",
-                    "성남시",
-                    "의정부시",
-                    "안양시",
-                    "부천시",
-                    "광명시",
-                    "평택시",
-                    "동두천시",
-                    "안산시",
-                    "고양시",
-                    "과천시",
-                    "구리시",
-                    "남양주시",
-                    "오산시",
-                    "시흥시",
-                    "군포시",
-                    "의왕시",
-                    "하남시",
-                    "용인시",
-                    "파주시",
-                    "이천시",
-                    "안성시",
-                    "김포시",
-                    "화성시",
-                    "광주시",
-                    "양주시",
-                    "포천시",
-                    "여주시",
-                    "연천군",
-                    "가평군",
-                    "양평군");
-            default -> cities = new ArrayList();
-        }
-        if(!cities.stream().anyMatch(t -> t.equals(city))){
-            throw new IllegalArgumentException("잘못된 도시명 입니다");
-        }
     }
 
     public void validateUserInStudy(UserInfo user, Long id) throws IllegalAccessException {

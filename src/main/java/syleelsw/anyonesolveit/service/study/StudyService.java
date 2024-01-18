@@ -28,10 +28,7 @@ import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
-import syleelsw.anyonesolveit.etc.GoalTypes;
-import syleelsw.anyonesolveit.etc.JwtTokenProvider;
-import syleelsw.anyonesolveit.etc.LanguageTypes;
-import syleelsw.anyonesolveit.etc.Locations;
+import syleelsw.anyonesolveit.etc.*;
 import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
@@ -93,7 +90,7 @@ public class StudyService {
         //잘못된 지역구 체크
 
         try{
-            validationService.validateLocations(studyDto.getArea(), studyDto.getCity());
+            StaticValidator.validateLocations(studyDto.getArea(), studyDto.getCity());
         }catch (IllegalArgumentException e){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
@@ -136,7 +133,7 @@ public class StudyService {
         log.info("Area: {}", area);
         log.info("City: {}", city);
         try{
-            validationService.validateLocations(area, city);
+            StaticValidator.validateLocations(area, city);
         }catch (IllegalArgumentException e){
             log.info("validationLocation 에서 걸림.");
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -152,10 +149,6 @@ public class StudyService {
         log.info("스터디t: {}", studies);
         return new ResponseEntity(studies.stream().map(study -> StudyResponse.of(study)).collect(Collectors.toList()), HttpStatus.OK);
     }
-
-    public ResponseEntity getStudies(Integer orderBy, String term, Integer page, LanguageTypes language, GoalTypes level,Locations area) {
-        return null;
-    }
     public void updateStudy(Study study, StudyDto studyDto, Set<UserInfo> members){
         study.setTitle(studyDto.getTitle());
         study.setDescription(studyDto.getDescription());
@@ -168,6 +161,7 @@ public class StudyService {
         study.setFrequency(studyDto.getFrequency());
         study.setStudy_time(studyDto.getStudy_time());
     }
+    @Transactional
     public ResponseEntity putStudy(Long id, StudyDto studyDto) {
         Optional<Study> studyOptional = studyRepository.findById(id);
         if(studyOptional.isEmpty()){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
@@ -185,7 +179,7 @@ public class StudyService {
         Study study = studyOptional.get();
         return study.getUser().getId() == userId;
     }
-
+    @Transactional
     public ResponseEntity delStudy(String access, Long id) {
         if(!validateDeleteStudy(access, id)){
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
@@ -252,7 +246,7 @@ public class StudyService {
         if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(studies.get(), HttpStatus.OK) ;
     }
-
+    @Transactional
     public ResponseEntity deleteStudyProblem(String access, Long id, Integer problem) {
         Long userId = jwtTokenProvider.getUserId(access);
         Optional<UserInfo> user = userRepository.findById(userId);
@@ -272,7 +266,7 @@ public class StudyService {
         studyProblemRepository.delete(byId.get());
         return new ResponseEntity(HttpStatus.OK);
     }
-
+    @Transactional
     public ResponseEntity makeParticipation(String access, ParticipationDTO participationDTO) {
         Long userId = jwtTokenProvider.getUserId(access);
         //스터디가 존재해야 신청할 수 있다.
@@ -302,7 +296,7 @@ public class StudyService {
         return new ResponseEntity(save.getId(), HttpStatus.OK);
 
     }
-
+    @Transactional
     public ResponseEntity deleteParticipation(String access, Long studyId) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
@@ -321,6 +315,7 @@ public class StudyService {
         return new ResponseEntity(HttpStatus.OK);
     }
 
+    @Transactional
     public ResponseEntity confirmParticipation(String access, String participationId, Boolean confirm) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();

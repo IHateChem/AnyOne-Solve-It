@@ -1,28 +1,26 @@
 package syleelsw.anyonesolveit.service.user;
 
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
-import syleelsw.anyonesolveit.api.user.dto.ParticipationResponse;
-import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
-import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
-import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
+import syleelsw.anyonesolveit.api.user.dto.*;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
+import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
-import java.net.MalformedURLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -33,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ValidationService validationService;
     private final ParticipationRepository participationRepository;
+    private final BaekjoonInformationRepository baekjoonInformationRepository;
     private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
@@ -46,6 +45,11 @@ public class UserService {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
         //todo 수정하기.
+        return validBJAndUpdateUser(userProfile, user);
+
+    }
+
+    private ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
         Integer rank = validationService.isValidateBJIdAndGetRank(userProfile.getBjname());
         if(rank==null){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -53,25 +57,16 @@ public class UserService {
         SolvedProblemDto solvedProblem = getSolvedProblem(userProfile.getBjname());
         user.update(rank, solvedProblem, userProfile);
         return new ResponseEntity(HttpStatus.OK);
-
     }
+
     @Transactional
     public ResponseEntity setProfile(String Access, UserProfileDto userProfile){
-        log.info("HI1");
         Long id = tokenProvider.getUserId(Access);
         UserInfo user = userRepository.findById(id).get();
-        log.info("HI2");
         if(!user.isFirst()){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
-        log.info("HI3");
-        Integer rank = validationService.isValidateBJIdAndGetRank(userProfile.getBjname());
-        if(rank==null){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-        SolvedProblemDto solvedProblem = getSolvedProblem(userProfile.getBjname());
-        user.update(rank, solvedProblem, userProfile);
-        return new ResponseEntity(HttpStatus.OK);
+        return validBJAndUpdateUser(userProfile, user);
     }
 
     public SolvedProblemDto getSolvedProblem(String username) {
@@ -110,7 +105,7 @@ public class UserService {
                 .solved(user_level_problem)
                 .build();
     }
-
+    @Transactional
     private Callable<Set<Integer>> createTask(String url) {
         RestTemplate restTemplate = new RestTemplate();
         return () -> {
@@ -147,5 +142,55 @@ public class UserService {
         Optional<List<Participation>> optionalParticipations = participationRepository.findMyParticipationsByUser(user);
 
         return getParticipationListResponseEntity(userId, optionalParticipations);
+    }
+
+    public ResponseEntity getMyPage(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        List<Participation> suggestions = participationRepository.findMyParticipationsByUser(user).orElse(new ArrayList<>());
+        List<Participation> participations = participationRepository.findAllByUser(user).orElse(new ArrayList<>());
+        return new ResponseEntity(MyPageResponse.of(user, suggestions.size(), participations.size()), HttpStatus.OK);
+    }
+    @Transactional
+    public ResponseEntity createMyPage(String access, MyPageDto myPage) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        if(!validationService.isValidateBJId(myPage.getBjname())){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+        user.setFirst(false);
+        setUserInformation(user, myPage);
+        log.info("user: {}", user);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+    @Transactional
+    public ResponseEntity updateMyPage(String access, MyPageDto myPage) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        String bjname = myPage.getBjname();
+        if(!validationService.isValidateBJId(bjname)){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        //update bjInfo
+        ResponseEntity<SolvedacUserInfoDto> response = validationService.getSolvedacUserInfoDtoResponseEntity(bjname);
+        BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(bjname).get();
+        user.setRank(response.getBody().getRank());
+        user.setSolved(response.getBody().getSolvedCount());
+        setUserInformation(user, myPage);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    private void setUserInformation(UserInfo user, MyPageDto myPage) {
+        String[] split = myPage.getArea().split(" ");
+        user.setArea(Locations.valueOf(split[0]));
+        user.setCity(split[1]);
+        user.setBjname(myPage.getBjname());
+        user.setLanguages(myPage.getLanguages());
+        user.setPrefer_type(myPage.getPrefer_type());
+
+        BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(myPage.getBjname()).get();
+        user.setRank(baekjoonInformation.getRank());
+        user.setSolved(baekjoonInformation.getSolved());
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.util.StopWatch;
 import org.springframework.validation.BindingResult;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
 import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
+import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
@@ -25,7 +26,7 @@ import java.util.Optional;
 public class ControllerAdvice {
     private final JwtTokenProvider jwtTokenProvider;
     private final StudyRepository studyRepository;
-    private final RefreshShortRedisRepository refreshShortRedisRepository;
+    private final RefreshRedisRepository refreshRedisRepository;
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allService() &&  args(loginBody, bindingResult)")
     public ResponseEntity validator(ProceedingJoinPoint joinPoint, LoginBody loginBody,  BindingResult bindingResult) throws Throwable {
         log.info("validation AOP");
@@ -47,15 +48,15 @@ public class ControllerAdvice {
 
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, ..)")
     public ResponseEntity jwtValidation(ProceedingJoinPoint joinPoint, String Access) throws Throwable {
-        if (jwtTokenProvider.validateToken(Access) && isLoginUser(Access)) {
+        if (jwtTokenProvider.validateToken(Access) && isLoginUser(jwtTokenProvider.getUserId(Access))) {
             return (ResponseEntity) joinPoint.proceed();
         } else {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
-    private boolean isLoginUser(String access) {
-        return refreshShortRedisRepository.findById(access).isPresent();
+    private boolean isLoginUser(Long id) {
+        return refreshRedisRepository.findById(id).isPresent();
     }
 
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, id, ..)")

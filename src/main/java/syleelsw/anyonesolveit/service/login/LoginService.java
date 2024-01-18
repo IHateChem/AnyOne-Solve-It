@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.login.Provider;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
 import syleelsw.anyonesolveit.domain.login.RefreshShort;
+import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
@@ -27,6 +28,7 @@ import java.util.Optional;
 public class LoginService {
     private final JwtTokenProvider provider;
     private final RefreshShortRedisRepository refreshShortRedisRepository;
+    private final RefreshRedisRepository refreshRedisRepository;
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
 
@@ -125,9 +127,8 @@ public class LoginService {
     }
 
     public ResponseEntity logout(String access) {
-        Optional<RefreshShort> byId = refreshShortRedisRepository.findById(access);
-        if(byId.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        refreshShortRedisRepository.delete(byId.get());
+        Long userId = provider.getUserId(access);
+        refreshRedisRepository.deleteById(userId);
         return new ResponseEntity(HttpStatus.OK);
     }
 }

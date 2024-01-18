@@ -32,23 +32,24 @@ public class UserInfo extends BaseEntity {
     private String picture;
     @Enumerated(EnumType.STRING)
     private Locations area;
+    private String city;
     @ElementCollection(fetch = FetchType.LAZY) @Enumerated(EnumType.STRING)
     private List<LanguageTypes> languages;
     @ElementCollection(fetch = FetchType.LAZY)
     private List<Integer> solvedProblem;
     @Column(columnDefinition="TEXT")
     private String solveProblemLevel;
-    @ColumnDefault("false")
+    @ColumnDefault("true")
     private boolean isFirst;
 
     @ColumnDefault("0")
-    private Integer solved;
+    private Long solved;
 
     @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = CascadeType.ALL)
     private Set<Study> userStudyJoins  = new HashSet<>();
 
     @Builder
-    private UserInfo(Long id, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Integer solved, String identifier) {
+    private UserInfo(Long id, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, String identifier) {
         this.id = id;
         this.picture = picture;
         this.username = username;
@@ -73,7 +74,7 @@ public class UserInfo extends BaseEntity {
         this.area = userProfile.getArea();
         this.languages = userProfile.getLanguages();
         this.isFirst = false;
-        this.solved = getSolvedProblem().size();
+        this.solved = (long) getSolvedProblem().size();
 
     }
 }
