@@ -25,7 +25,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity postLogin(@RequestBody @Validated LoginBody loginBody, BindingResult bindingResult){
+    public ResponseEntity postLogin(@RequestBody @Validated LoginBody loginBody){
         return loginService.login(loginBody);
     }
     @GetMapping("/test")

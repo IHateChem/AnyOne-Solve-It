@@ -1,49 +1,55 @@
 package syleelsw.anyonesolveit.service.validation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
+import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
+import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
+import syleelsw.anyonesolveit.domain.user.UserInfo;
+import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-@Service @Slf4j
+@Service @Slf4j @RequiredArgsConstructor
 public class ValidationService {
     private String solvedacAPI = "https://solved.ac/api/v3";
-    private boolean isValidateBJId(String bjId){
-        String url = solvedacAPI + "/search/user?query=" + bjId;
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = null;
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> request = new HttpEntity<>(json, headers);
-        // HTTP POST 요청 보내기
-        ResponseEntity<UserSearchDto> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                UserSearchDto.class
-        );
-        log.info(response.toString());
-        Long count = response.getBody().getCount();
-        log.info("{}", count > 0);
-        return count != null && count > 0;
+    private final StudyRepository studyRepository;
+    private final ParticipationRepository participationRepository;
+    private final BaekjoonInformationRepository baekjoonInformationRepository;
+    public boolean isValidateBJId(String bjId){
+        Optional<BaekjoonInformation> bjInfo = baekjoonInformationRepository.findById(bjId);
+        if(bjInfo.isPresent()){ //캐쉬 가능
+            return true;
+        }
+
+        ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
+        HttpStatusCode statusCode = response.getStatusCode();
+        if (statusCode.equals(HttpStatus.OK)) {
+            BaekjoonInformation myBjInfo = BaekjoonInformation.builder().bjname(bjId).rank(response.getBody().getRank()).solved(response.getBody().getSolvedCount()).build();
+            baekjoonInformationRepository.save(myBjInfo);
+        } else if (statusCode.equals(HttpStatus.NOT_FOUND)) {
+            return false;
+        } else {
+            throw new IllegalStateException("SolvedDac 서버 확인하세요");
+        }
+        return true;
     }
 
-
-    private Integer getUserRankFromAPI(String bjName){
-        String url = solvedacAPI + "/user/show?handle=" + bjName;
+    public ResponseEntity<SolvedacUserInfoDto> getSolvedacUserInfoDtoResponseEntity(String bjId) {
+        String url = solvedacAPI + "/user/show?handle=" + bjId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -55,8 +61,13 @@ public class ValidationService {
                 request,
                 SolvedacUserInfoDto.class
         );
-        log.info(response.getBody().toString());
-        return response.getBody().getRank();
+        return response;
+    }
+
+
+    private Integer getUserRankFromAPI(String bjName){
+        BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(bjName).get();
+        return baekjoonInformation.getRank();
     }
 
     public Integer isValidateBJIdAndGetRank(String bjName) {
@@ -64,5 +75,27 @@ public class ValidationService {
             return null;
         }
         return getUserRankFromAPI(bjName);
+    }
+
+    public void validateUserInStudy(UserInfo user, Long id) throws IllegalAccessException {
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(! (studyOptional.isPresent() && studyOptional.get().getMembers().contains(user))){
+            throw new IllegalAccessException("삭제 권한이 없습니다.");
+        }
+    }
+
+    public void isValidStudy(Long studyId) throws IllegalAccessException {
+        if(studyRepository.findById(studyId).isEmpty()){
+            throw new IllegalAccessException("존재하지 않는 스터디 입니다.");
+        }
+    }
+
+    public void isValidParticipationRequest(String participationId, UserInfo user) throws IllegalAccessException {
+        Optional<Participation> byId = participationRepository.findById(participationId);
+        if(! (byId.isPresent() && byId.get().getStudy().getUser().equals(user)
+                && byId.get().getState().equals(ParticipationStates.대기중))){
+            // 아이디가 존재하지 않거나,참가 승인할 사람이 권한이 없거나.  참가신청 상태가 대기중이거나
+            throw new IllegalAccessException("잘못된 승인 요청입니다.");
+        }
     }
 }
