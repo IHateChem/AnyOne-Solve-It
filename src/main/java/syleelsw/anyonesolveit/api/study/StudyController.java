@@ -67,4 +67,9 @@ public class StudyController {
         return studyService.deleteParticipation(Access, studyId);
     }
 
+    @PostMapping("/participation/confirm")
+    public ResponseEntity confirmParticipation(@RequestHeader String Access, @RequestParam String participationId, @RequestParam Boolean confirm){
+        return studyService.confirmParticipation(Access, participationId, confirm);
+    }
+
 }

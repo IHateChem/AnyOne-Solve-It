@@ -277,13 +277,18 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         //스터디가 존재해야 신청할 수 있다.
         Long studyId = participationDTO.getStudyId();
+        UserInfo user = userRepository.findById(userId).get();
+        Study study = studyRepository.findById(studyId).get();
+
         try {
             validationService.isValidStudy(studyId);
         } catch (IllegalAccessException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        UserInfo user = userRepository.findById(userId).get();
-        Study study = studyRepository.findById(studyId).get();
+        if(study.getUser().equals(user)){
+            //스터디를 만든 사람은 스터디를 신청할 수 없다.
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
 
 
         Participation save = participationRepository.save(Participation.builder()
@@ -313,6 +318,22 @@ public class StudyService {
         }
 
         participationRepository.delete(byId.get());
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public ResponseEntity confirmParticipation(String access, String participationId, Boolean confirm) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+
+        try {
+            validationService.isValidParticipationRequest(participationId, user);
+        } catch (IllegalAccessException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        Participation participation = participationRepository.findById(participationId).get();
+        ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
+        participation.setState(state);
         return new ResponseEntity(HttpStatus.OK);
     }
 }

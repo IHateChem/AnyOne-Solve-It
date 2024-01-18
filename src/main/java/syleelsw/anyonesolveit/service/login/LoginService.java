@@ -2,6 +2,7 @@ package syleelsw.anyonesolveit.service.login;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -123,4 +124,10 @@ public class LoginService {
         }
     }
 
+    public ResponseEntity logout(String access) {
+        Optional<RefreshShort> byId = refreshShortRedisRepository.findById(access);
+        if(byId.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        refreshShortRedisRepository.delete(byId.get());
+        return new ResponseEntity(HttpStatus.OK);
+    }
 }

@@ -7,8 +7,11 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 public class ValidationService {
     private String solvedacAPI = "https://solved.ac/api/v3";
     private final StudyRepository studyRepository;
+    private final ParticipationRepository participationRepository;
     private boolean isValidateBJId(String bjId){
         String url = solvedacAPI + "/search/user?query=" + bjId;
         RestTemplate restTemplate = new RestTemplate();
@@ -149,6 +153,15 @@ public class ValidationService {
     public void isValidStudy(Long studyId) throws IllegalAccessException {
         if(studyRepository.findById(studyId).isEmpty()){
             throw new IllegalAccessException("존재하지 않는 스터디 입니다.");
+        }
+    }
+
+    public void isValidParticipationRequest(String participationId, UserInfo user) throws IllegalAccessException {
+        Optional<Participation> byId = participationRepository.findById(participationId);
+        if(! (byId.isPresent() && byId.get().getStudy().getUser().equals(user)
+                && byId.get().getState().equals(ParticipationStates.대기중))){
+            // 아이디가 존재하지 않거나,참가 승인할 사람이 권한이 없거나.  참가신청 상태가 대기중이거나
+            throw new IllegalAccessException("잘못된 승인 요청입니다.");
         }
     }
 }

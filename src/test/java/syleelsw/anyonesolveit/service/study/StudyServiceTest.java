@@ -22,6 +22,7 @@ import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
+import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.*;
@@ -99,6 +100,51 @@ class StudyServiceTest {
                 .period("1주").build();
     }
 
+    @DisplayName("승인 테스트. 없는 참가신청아이디 이거 이미 승인 처리한 것이면 400오류, Repository에 요청의 confirm이 1이면 승인으로, 0이면 거절로 변경이 되어있어야한다.")
+    @Test
+    void 승인test(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo user3 = mkUserInfo(true, "syleelsj");
+        UserInfo savedUser2 = userRepository.save(user2);
+        UserInfo savedUser3 = userRepository.save(user3);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        String jwt3 = jwtTokenProvider.createJwt(savedUser3.getId(),TokenType.ACCESS);
+        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
+        String succId = (String) studyService.makeParticipation(jwt2, succParticipationDTO).getBody();
+        String succId2 = (String) studyService.makeParticipation(jwt3, succParticipationDTO).getBody();
+
+        //when
+
+        ResponseEntity noAuthResponse = studyService.confirmParticipation(jwt2, succId, true);
+        ResponseEntity wrongIdResponse = studyService.confirmParticipation(jwt2, succId+"1234", true);
+        ResponseEntity succResponse = studyService.confirmParticipation(jwt, succId, true);
+        ResponseEntity alreadyDoneResponse = studyService.confirmParticipation(jwt, succId, true);
+        ResponseEntity succResponse2 = studyService.confirmParticipation(jwt, succId2, false);
+
+        Participation participation = participationRepository.findById(succId).get();
+        Participation participation2 = participationRepository.findById(succId2).get();
+
+
+        //then
+
+        assertThat(noAuthResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(wrongIdResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(succResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(alreadyDoneResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(succResponse2.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(participation2.getState()).isEqualTo(ParticipationStates.거절);
+        assertThat(participation.getState()).isEqualTo(ParticipationStates.승인);
+
+    }
     @DisplayName("참가신청 취소 테스트 검색이 안되어야 한다. ")
     @Test
     void 참가취소test(){
@@ -134,13 +180,15 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
         ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         //when
         ParticipationDTO failParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId+100).build();
         ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
         ResponseEntity failResponse = studyService.makeParticipation(jwt, failParticipationDTO);
-        ResponseEntity<String> succResponse = studyService.makeParticipation(jwt, succParticipationDTO);
+        ResponseEntity<String> authFailResponse = studyService.makeParticipation(jwt, succParticipationDTO);
+        ResponseEntity<String> succResponse = studyService.makeParticipation(jwt2, succParticipationDTO);
 
         //then
 
@@ -148,6 +196,7 @@ class StudyServiceTest {
         assertThat(succResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         String particpationId = succResponse.getBody();
         assertThat(participationRepository.findById(particpationId).isPresent()).isTrue();
+        assertThat(authFailResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
 
