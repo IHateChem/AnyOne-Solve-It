@@ -67,7 +67,7 @@ public class LoginService {
         if(userInfo == null) { userInfo = join(email, username, provider, picture);}
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
 
-        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "username", userInfo.getUsername(), "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
     }
 
     public ResponseEntity googleLogin(String authCode,Provider authProvider){
