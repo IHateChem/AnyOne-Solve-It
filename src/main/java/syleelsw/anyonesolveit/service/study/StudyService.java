@@ -102,12 +102,12 @@ public class StudyService {
         study = studyRepository.save(study);
         UserStudyJoin userStudyJoin = UserStudyJoin.builder().study(study).user(user).build();
         //serStudyJoinRepository.save(userStudyJoin);
-        return new ResponseEntity(study, HttpStatus.OK);
+        return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
     }
     //todo: aop 걸어서 업데이트 하기.
     public ResponseEntity getStudy(Long id) {
         Study study = studyRepository.findById(id).get();
-        return new ResponseEntity(study, HttpStatus.OK);
+        return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
     }
     private List listSplitter(List t,int page){
         if(t.size() > (page-1)*maxPage){
@@ -168,7 +168,7 @@ public class StudyService {
         Study study = studyOptional.get();
         List<UserInfo> users = userRepository.findAllById(studyDto.getMembers());
         updateStudy(study, studyDto, users.stream().collect(Collectors.toSet()));
-        return new ResponseEntity(HttpStatus.OK);
+        return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
     }
     private boolean validateDeleteStudy(String access, Long id){
         Long userId = jwtTokenProvider.getUserId(access);
