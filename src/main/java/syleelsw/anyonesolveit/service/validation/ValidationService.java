@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
@@ -18,6 +19,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,17 +37,16 @@ public class ValidationService {
             return true;
         }
 
-        ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
-        HttpStatusCode statusCode = response.getStatusCode();
-        if (statusCode.equals(HttpStatus.OK)) {
+        try{
+            ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
             BaekjoonInformation myBjInfo = BaekjoonInformation.builder().bjname(bjId).rank(response.getBody().getRank()).solved(response.getBody().getSolvedCount()).build();
             baekjoonInformationRepository.save(myBjInfo);
-        } else if (statusCode.equals(HttpStatus.NOT_FOUND)) {
+            return true;
+        }catch (HttpClientErrorException.NotFound notFound){
             return false;
-        } else {
+        }catch (HttpClientErrorException otherError){
             throw new IllegalStateException("SolvedDac 서버 확인하세요");
         }
-        return true;
     }
 
     public ResponseEntity<SolvedacUserInfoDto> getSolvedacUserInfoDtoResponseEntity(String bjId) {
@@ -97,5 +98,10 @@ public class ValidationService {
             // 아이디가 존재하지 않거나,참가 승인할 사람이 권한이 없거나.  참가신청 상태가 대기중이거나
             throw new IllegalAccessException("잘못된 승인 요청입니다.");
         }
+    }
+
+    public ResponseEntity validateBaekjoonIds(List<String> ids) {
+        List<List<? extends Serializable>> collect = ids.stream().map(t -> List.of(t, isValidateBJId(t))).collect(Collectors.toList());
+        return new ResponseEntity(collect, HttpStatus.OK);
     }
 }
