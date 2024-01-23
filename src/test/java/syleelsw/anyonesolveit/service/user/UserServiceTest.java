@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import syleelsw.anyonesolveit.api.login.Provider;
 import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.api.user.dto.ParticipationResponse;
@@ -17,6 +18,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.*;
 import syleelsw.anyonesolveit.service.study.StudyService;
+import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 
 import java.util.List;
 
@@ -50,6 +52,7 @@ class UserServiceTest {
                 .email("syleelsw@snu.ac.kr")
                 .isFirst(isFirst)
                 .bjname(bjName)
+                .provider(Provider.test)
                 .build();
     }
 
@@ -79,8 +82,8 @@ class UserServiceTest {
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
-        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response2 = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         Long studyId2 = response2.getBody().getId();
 
@@ -114,8 +117,8 @@ class UserServiceTest {
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
-        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response2 = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         Long studyId2 = response2.getBody().getId();
 

@@ -19,7 +19,7 @@ public class StudyResponse {
     private Integer avg_rank;
     private Float avg_solved;
     private LanguageTypes language;
-    private List<Long> members;
+    private List<StudyMember> members;
     private List<UserSolvedDto> solved;
     private GoalTypes level;
     private String area;
@@ -30,7 +30,7 @@ public class StudyResponse {
 
 
     @Builder
-    public StudyResponse(Long id, String title, String description, Integer avg_rank, Float avg_solved, LanguageTypes language, List<Long> members, List<UserSolvedDto> solved, GoalTypes level, String area, String meeting_type, String period, String frequency, String study_time) {
+    public StudyResponse(Long id, String title, String description, Integer avg_rank, Float avg_solved, LanguageTypes language, List<StudyMember> members, List<UserSolvedDto> solved, GoalTypes level, String area, String meeting_type, String period, String frequency, String study_time) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -55,7 +55,7 @@ public class StudyResponse {
                 .avg_rank(study.getAvg_rank())
                 .avg_solved(study.getAvg_solved())
                 .language(study.getLanguage())
-                .members(study.getMembers().stream().map(t -> t.getId()).collect(Collectors.toList()))
+                .members(study.getMembers().stream().map(t -> StudyMember.fromUserInfo(t)).collect(Collectors.toList()))
                 .solved(study.getMembers().stream().map(t ->
                         UserSolvedDto.builder().problems(t.getSolvedProblem()).username(t.getUsername()).rank(t.getRank()).build()).collect(Collectors.toList()))
                 .level(study.getLevel())
