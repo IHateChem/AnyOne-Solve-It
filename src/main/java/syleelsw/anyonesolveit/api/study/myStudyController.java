@@ -15,11 +15,15 @@ import syleelsw.anyonesolveit.service.study.StudyService;
 @RequiredArgsConstructor
 public class myStudyController {
     private final StudyService studyService;
-    @GetMapping("/mystudies/selfmade")
+    @GetMapping("/mystudies")
+    public ResponseEntity getMyStudyAll(@RequestHeader String Access){
+        return studyService.getMyStudyAll(Access);
+    }
+    @GetMapping("/mystudies/management")
     public ResponseEntity getMyStudySelf(@RequestHeader String Access){
         return studyService.getMyStudySelf(Access);
     }
-    @GetMapping("/mystudies")
+    @GetMapping("/mystudies/participation")
     public ResponseEntity getMyStudy(@RequestHeader String Access){
         return studyService.getMyStudy(Access);
     }

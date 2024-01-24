@@ -54,7 +54,7 @@ public class LoginService {
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByIdentifier(email + "_test");
+        UserInfo userInfo = userRepository.findUserByEmail(email);
         String username = "dltjrdn";
         if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
@@ -62,11 +62,11 @@ public class LoginService {
     }
 
 
-    private ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
-        UserInfo userInfo = userRepository.findUserByIdentifier(email+"_"+provider);
+    public ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
+        UserInfo userInfo = userRepository.findUserByEmail(email);
         if(userInfo == null) { userInfo = join(email, username, provider, picture);}
+        if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
-
         return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
     }
 
@@ -100,9 +100,10 @@ public class LoginService {
         UserInfo userInfo = UserInfo.builder()
                 .email(email)
                 .username(username)
-                .identifier(email+"_" + provider)
+                .email(email)
                 .isFirst(true)
                 .picture(picture)
+                .provider(provider)
                 .build();
         return userRepository.save(userInfo);
     }

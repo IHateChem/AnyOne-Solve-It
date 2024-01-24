@@ -25,7 +25,7 @@ public class StudyController {
         return studyService.findStudy(order_by, page, language, level,  area, term);
     }
     @PostMapping("/studies")
-    public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto, BindingResult bindingResult){
+    public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto){
         return studyService.createStudy(Access, studyDto);
     }
     @GetMapping("/studies/{id}")
@@ -43,6 +43,11 @@ public class StudyController {
         return studyService.delStudy(Access, id);
     }
 
+    @DeleteMapping("/studies/{id}/suggestions")
+    public ResponseEntity delAllSuggestion(@RequestHeader String Access, @PathVariable Long id){
+        return studyService.delAllSuggestion(Access, id);
+    }
+
     @PostMapping("/studies/{id}/suggestion/{problem}")
     public ResponseEntity getStudyProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
         return studyService.getStudyProblem(id, problem);
@@ -51,7 +56,14 @@ public class StudyController {
     public ResponseEntity deleteStudyProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
         return studyService.deleteStudyProblem(Access, id, problem);
     }
-
+    @PutMapping("/studies/{id}/manager")
+    public ResponseEntity changeManger(@RequestHeader String Access, @PathVariable Long id, @RequestParam Long userId){
+        return studyService.changeManger(Access, id, userId);
+    }
+    @PostMapping("/studies/{id}/out")
+    public ResponseEntity studyOut(@RequestHeader String Access, @PathVariable Long id){
+        return studyService.studyOut(Access, id);
+    }
 
     @GetMapping("/studies/{id}/suggestion")
     public ResponseEntity getSuggestion(@RequestHeader String Access, @PathVariable Long id){

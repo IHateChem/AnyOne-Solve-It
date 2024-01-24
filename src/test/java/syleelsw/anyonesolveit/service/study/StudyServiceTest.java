@@ -11,10 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
-import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
-import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
-import syleelsw.anyonesolveit.api.study.dto.StudyDto;
+import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
 import syleelsw.anyonesolveit.domain.study.Participation;
@@ -100,6 +97,32 @@ class StudyServiceTest {
                 .period("1주").build();
     }
 
+    @DisplayName("스터디장 변경을 테스트합니다. 권한없는 친구가 요청하면 400, 권한 있으면 200을 반환 합니다. 실제로 스터디장이 바뀌어야 합니다.")
+    @Test
+    void changeStudyManagerTest(){
+        //given
+
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        //when
+        ResponseEntity responseEntity = studyService.changeManger(jwt2, studyId, user2.getId());
+        ResponseEntity responseEntity1 = studyService.changeManger(jwt, studyId, user2.getId());
+        ResponseEntity<List<StudyResponse>> myStudySelf = studyService.getMyStudySelf(jwt2);
+        //then
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseEntity1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(myStudySelf.getBody()).hasSize(1);
+        assertThat(myStudySelf.getBody().get(0).getId()).isEqualTo(studyId);
+    }
     @DisplayName("승인 테스트. 없는 참가신청아이디 이거 이미 승인 처리한 것이면 400오류, Repository에 요청의 confirm이 1이면 승인으로, 0이면 거절로 변경이 되어있어야한다.")
     @Test
     void 승인test(){
@@ -115,7 +138,7 @@ class StudyServiceTest {
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
         String jwt3 = jwtTokenProvider.createJwt(savedUser3.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
         String succId = (String) studyService.makeParticipation(jwt2, succParticipationDTO).getBody();
@@ -156,7 +179,7 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         //when
         ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
@@ -181,7 +204,7 @@ class StudyServiceTest {
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
         //when
         ParticipationDTO failParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId+100).build();
@@ -212,7 +235,7 @@ class StudyServiceTest {
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
 
         ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
@@ -247,7 +270,7 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long studyId = response.getBody().getId();
 
         ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
@@ -266,7 +289,7 @@ class StudyServiceTest {
 
 
 
-    @DisplayName("이문제 어때요 잘되는지(잘 db에 없는게 저장되는지, 기존에 있으면 잘 처리되는지) 확인 / 최신순으로 10개 나오는지 확인")
+    @DisplayName("이문제 어때요 잘되는지(잘 db에 없는게 저장되는지, 기존에 있으면 잘 처리되는지) 확인 / 최신순으로 10개 나오는지 확인, deleteAll시 전부다 없어지는지 확인")
     @Test
     void suggestionTest(){
         //given
@@ -277,7 +300,7 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         log.info("{}", response);
         ResponseEntity<ProblemResponse> valid_response1 = studyService.getStudyProblem(response.getBody().getId(), 1000);
         ResponseEntity<ProblemResponse> valid_response2 = studyService.getStudyProblem(response.getBody().getId(), 1000);
@@ -293,14 +316,22 @@ class StudyServiceTest {
         ResponseEntity<ProblemResponse> valid_response12 = studyService.getStudyProblem(response.getBody().getId(), 1009);
 
         //when
-        ResponseEntity<List<StudyProblemEntity>> suggestion = studyService.getSuggestion(response.getBody().getId());
+        ResponseEntity<List<StudyProblemResponse>> suggestion = studyService.getSuggestion(response.getBody().getId());
 
         //then
         assertThat(valid_response1.getBody().getProblemId()).isEqualTo(1000);
         assertThat(valid_response2.getBody().getProblemId()).isEqualTo(1000);
         assertThat(suggestion.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(suggestion.getBody().size()).isEqualTo(10);
-        assertThat(suggestion.getBody().stream().map(t-> t.getProblem().getId()).collect(Collectors.toList())).isSorted();
+        assertThat(suggestion.getBody().stream().map(t-> t.getProbNum()).collect(Collectors.toList())).isSorted();
+
+        //when
+        studyService.delAllSuggestion(jwt, response.getBody().getId());
+        ResponseEntity<List<StudyProblemEntity>> suggestion0 = studyService.getSuggestion(response.getBody().getId());
+        //then
+        assertThat(suggestion0.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(suggestion0.getBody().size()).isEqualTo(0);
+
     }
     @DisplayName("지역이 잘 동작하는지 확인합니다. ")
     @Test
@@ -337,8 +368,8 @@ class StudyServiceTest {
                 .period("1주").build();
 
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> studyResponse = studyService.createStudy(jwt, studyDto);
-        ResponseEntity<Study> wrongStudyResponse = studyService.createStudy(jwt, wrongStudyDto);
+        ResponseEntity<StudyResponse> studyResponse = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> wrongStudyResponse = studyService.createStudy(jwt, wrongStudyDto);
         //when
 
         ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "서울 강남구", null);
@@ -362,12 +393,12 @@ class StudyServiceTest {
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
-        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto1);
+        ResponseEntity<StudyResponse> response2 = studyService.createStudy(jwt, studyDto1);
         //when
-        ResponseEntity<List<Study>> myStudySelf = studyService.getMyStudy(jwt);
-        ResponseEntity<List<Study>> myStudySelf2 = studyService.getMyStudy(jwt2);
+        ResponseEntity<List<StudyResponse>> myStudySelf = studyService.getMyStudy(jwt);
+        ResponseEntity<List<StudyResponse>> myStudySelf2 = studyService.getMyStudy(jwt2);
 
         //then
         assertThat(myStudySelf.getBody()).extracting("id").containsExactlyInAnyOrder(response2.getBody().getId(), response.getBody().getId());
@@ -385,11 +416,11 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
-        ResponseEntity<Study> response2 = studyService.createStudy(jwt, studyDto1);
+        ResponseEntity<StudyResponse> response2 = studyService.createStudy(jwt, studyDto1);
         //when
-        ResponseEntity<List<Study>> myStudySelf = studyService.getMyStudySelf(jwt);
+        ResponseEntity<List<StudyResponse>> myStudySelf = studyService.getMyStudySelf(jwt);
 
         //then
         assertThat(myStudySelf.getBody()).extracting("id").containsExactlyInAnyOrder(response2.getBody().getId(), response.getBody().getId());
@@ -405,7 +436,7 @@ class StudyServiceTest {
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
-        ResponseEntity<Study> response = studyService.createStudy(jwt, studyDto);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
         Long StudyId = response.getBody().getId();
         StudyDto studyDto1 = studyBuilder2(List.of(savedUser1.getId()));
 

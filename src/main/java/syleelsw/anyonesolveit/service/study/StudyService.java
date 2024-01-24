@@ -11,18 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
+import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Problem;
-import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
-import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.ProblemRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.StudyProblemRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.*;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
@@ -50,16 +44,11 @@ public class StudyService {
     private final ValidationService validationService;
     private final StudyProblemRepository studyProblemRepository;
     private final ParticipationRepository participationRepository;
+    private final NoticeService noticeService;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
-    public ResponseEntity getMyStudy(String access) {
-        Long userId = jwtTokenProvider.getUserId(access);
-        UserInfo user = userRepository.findById(userId).get();
-        Optional<List<Study>> studies = studyRepository.findStudiesByMember(user);
-        if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        return new ResponseEntity(studies.get(), HttpStatus.OK) ;
-    }
+
 
     @PostConstruct
     public void init(){
@@ -72,27 +61,26 @@ public class StudyService {
             throw new IllegalArgumentException("존재하지 않는 유저가 있습니다.");
         }
         log.info("유효한 유저입니다. ");
-        return users.stream().collect(Collectors.toSet());
+        return new HashSet<>(users);
     }
     @Transactional
-    public ResponseEntity createStudy(String access, StudyDto studyDto){
+    public ResponseEntity<StudyResponse> createStudy(String access, StudyDto studyDto){
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Set<UserInfo> members;
 
-        //잘못된 유저가 있는지 체크
         try{
+            //잘못된 유저가 있는지 체크
             members = ValidateAndReturnMembers(studyDto.getMembers());
-        }catch (IllegalArgumentException e){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-
-        //잘못된 지역구 체크
-
-        try{
+            //잘못된 지역구 체크
             StaticValidator.validateLocations(studyDto.getArea(), studyDto.getCity());
         }catch (IllegalArgumentException e){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return getBadResponse();
+        }
+
+        //study가 온라인일때 Location 체크 
+        if(checkOnlineAreaValidity(studyDto)){
+            return getBadResponse();
         }
 
         Study study = Study.of(studyDto, members);
@@ -104,6 +92,11 @@ public class StudyService {
         //serStudyJoinRepository.save(userStudyJoin);
         return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
     }
+
+    private static boolean checkOnlineAreaValidity(StudyDto studyDto) {
+        return studyDto.getMeeting_type().equals("온라인") && studyDto.getArea().equals("ALL");
+    }
+
     //todo: aop 걸어서 업데이트 하기.
     public ResponseEntity getStudy(Long id) {
         Study study = studyRepository.findById(id).get();
@@ -123,7 +116,7 @@ public class StudyService {
         String[] split = locations.split(" ");
         String city;
         if(split.length >2 || (split.length == 1 && !split[0].equals("ALL") || split.length==0)){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return getBadResponse();
         }else if(split.length == 1){
             city =  "ALL";
         }else{
@@ -136,7 +129,7 @@ public class StudyService {
             StaticValidator.validateLocations(area, city);
         }catch (IllegalArgumentException e){
             log.info("validationLocation 에서 걸림.");
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return getBadResponse();
         }
 
         PageRequest pageRequest = PageRequest.of((page-1)*maxPage, maxPage);
@@ -144,10 +137,10 @@ public class StudyService {
             case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, city, term, pageRequest).get();
             case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, city, term, pageRequest).get();
             case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, city, term, pageRequest).get();
-            default ->  new ResponseEntity(HttpStatus.BAD_REQUEST);
+            default ->  getBadResponse();
         }
         log.info("스터디t: {}", studies);
-        return new ResponseEntity(studies.stream().map(study -> StudyResponse.of(study)).collect(Collectors.toList()), HttpStatus.OK);
+        return new ResponseEntity(studies.stream().map(StudyResponse::of).collect(Collectors.toList()), HttpStatus.OK);
     }
     public void updateStudy(Study study, StudyDto studyDto, Set<UserInfo> members){
         study.setTitle(studyDto.getTitle());
@@ -164,10 +157,10 @@ public class StudyService {
     @Transactional
     public ResponseEntity putStudy(Long id, StudyDto studyDto) {
         Optional<Study> studyOptional = studyRepository.findById(id);
-        if(studyOptional.isEmpty()){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
+        if(studyOptional.isEmpty()){return getBadResponse();}
         Study study = studyOptional.get();
         List<UserInfo> users = userRepository.findAllById(studyDto.getMembers());
-        updateStudy(study, studyDto, users.stream().collect(Collectors.toSet()));
+        updateStudy(study, studyDto, new HashSet<>(users));
         return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
     }
     private boolean validateDeleteStudy(String access, Long id){
@@ -185,8 +178,11 @@ public class StudyService {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
         Study study = studyRepository.findById(id).get();
+
+        //알림생성
         studyRepository.delete(study);
-        return new ResponseEntity(HttpStatus.OK);
+        study.getMembers().forEach(t-> noticeService.createNoticeType1to4(study, t, 4));
+        return getGoodResponse();
     }
     private void saveProblem(Long id, SolvedacItem problem){
         Problem forStoreProblem = Problem.of(ProblemResponse.of(problem));
@@ -217,7 +213,7 @@ public class StudyService {
                 problemResponse = ProblemResponse.of(solvedacItem);
                 problem = Optional.of(problemRepository.save(Problem.of(problemResponse)));
             }catch (HttpClientErrorException e){
-                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+                return getBadResponse();
             }
         }else {
             problemResponse = ProblemResponse.of(problem.get());
@@ -232,20 +228,14 @@ public class StudyService {
     public ResponseEntity getSuggestion(Long id) {
         Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByStudyIdDesc(id);
         if(top10ByIdDesc.isEmpty()){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return getBadResponse();
         }else{
-            return new ResponseEntity(top10ByIdDesc.get(), HttpStatus.OK);
+            return new ResponseEntity(top10ByIdDesc.get().stream().map(StudyProblemResponse::of).collect(Collectors.toList()), HttpStatus.OK);
         }
 
     }
 
-    public ResponseEntity getMyStudySelf(String access) {
-        Long userId = jwtTokenProvider.getUserId(access);
-        UserInfo user = userRepository.findById(userId).get();
-        Optional<List<Study>> studies = studyRepository.findAllByUser(user);
-        if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        return new ResponseEntity(studies.get(), HttpStatus.OK) ;
-    }
+
     @Transactional
     public ResponseEntity deleteStudyProblem(String access, Long id, Integer problem) {
         Long userId = jwtTokenProvider.getUserId(access);
@@ -264,7 +254,7 @@ public class StudyService {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         studyProblemRepository.delete(byId.get());
-        return new ResponseEntity(HttpStatus.OK);
+        return getGoodResponse();
     }
     @Transactional
     public ResponseEntity makeParticipation(String access, ParticipationDTO participationDTO) {
@@ -293,6 +283,10 @@ public class StudyService {
                 .state(ParticipationStates.대기중)
                 .build());
 
+        //성공시 알림 생성
+        log.info("참가 신청 성공, {}", participationDTO);
+        noticeService.createNotice56(study, study.getUser(),5 ,user);
+
         return new ResponseEntity(save.getId(), HttpStatus.OK);
 
     }
@@ -300,6 +294,7 @@ public class StudyService {
     public ResponseEntity deleteParticipation(String access, Long studyId) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
+
         //스터디가 존재해야 신청할 수 있다.
         try {
             validationService.isValidStudy(studyId);
@@ -312,7 +307,7 @@ public class StudyService {
         }
 
         participationRepository.delete(byId.get());
-        return new ResponseEntity(HttpStatus.OK);
+        return getGoodResponse();
     }
 
     @Transactional
@@ -329,6 +324,96 @@ public class StudyService {
         Participation participation = participationRepository.findById(participationId).get();
         ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
         participation.setState(state);
+        int noticeType = confirm ? 1 : 2;
+        noticeService.createNoticeType1to4(participation.getStudy(), participation.getUser(), noticeType);
+        return getGoodResponse();
+    }
+    public ResponseEntity getMyStudy(String access) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Study>> studies = studyRepository.findStudiesByMember(user);
+        //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
+    }
+
+    public ResponseEntity getMyStudyAll(String access) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+
+        Optional<List<Study>> managedStudies = studyRepository.findAllByUser(user);
+        Optional<List<Study>> participatedStudies = studyRepository.findStudiesByMember(user);
+        return new ResponseEntity(Map.of("managements", getStudyResponse(managedStudies), "participations", getStudyResponse(participatedStudies)), HttpStatus.OK);
+    }
+
+    public ResponseEntity getMyStudySelf(String access) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<List<Study>> studies = studyRepository.findAllByUser(user);
+        //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
+    }
+
+    private static List<StudyResponse> getStudyResponse(Optional<List<Study>> studies) {
+        return studies.get().stream().map(StudyResponse::of).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ResponseEntity studyOut(String access, Long id) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        log.info("Study 나가기. Study: {}", studyOptional.get());
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+
+        //study에 없는 사람이 요청시 400
+        if(!study.getMembers().contains(user)) return getBadResponse();
+        //todo 스터디 장일때 추가
+
+        study.getMembers().remove(user);
+        studyRepository.save(study);
+
+        noticeService.createNotice56(study, study.getUser(), 6, user);
+        return getGoodResponse();
+    }
+
+    private static ResponseEntity getGoodResponse() {
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    private static ResponseEntity getBadResponse() {
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
+    }
+
+    public ResponseEntity delAllSuggestion(String access, Long id) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        log.info("이문제 어때요 전부 삭제. Study: {}", studyOptional.get());
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+        studyProblemRepository.deleteAllByStudy(study);
+        return getGoodResponse();
+    }
+
+
+    public ResponseEntity changeManger(String access, Long id, Long nextUserId) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        log.info("스터디장 변경. Study: {}", studyOptional.get());
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+
+        //스터디장 변경 유효성 확인
+        if(!study.getUser().equals(user) || !study.getMembers().stream().anyMatch(t-> t.getId().equals(nextUserId))){
+            return getBadResponse();
+        }
+        UserInfo nextUser = userRepository.findById(nextUserId).get();
+        study.setUser(nextUser);
+
+        //기존 스터디장이 받아야 하는 알림 변경
+        noticeService.changeStudyManager(user, nextUser, study);
+        return getGoodResponse();
     }
 }

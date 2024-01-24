@@ -3,6 +3,7 @@ package syleelsw.anyonesolveit.domain.user;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import syleelsw.anyonesolveit.api.login.Provider;
 import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
 import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.domain.BaseEntity;
@@ -16,7 +17,7 @@ import java.util.Locale;
 import java.util.Set;
 
 @Entity @Getter @ToString(exclude = {"userStudyJoins"}) @NoArgsConstructor(access = AccessLevel.PROTECTED) @Setter
-@Table(indexes = @Index(name = "idx_identifier", columnList = "identifier"))
+@Table(indexes = @Index(name = "idx_email", columnList = "email"))
 public class UserInfo extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="user_id")
@@ -24,7 +25,6 @@ public class UserInfo extends BaseEntity {
 
     private String username;
     private String email;
-    private String identifier;
     private String bjname;
     private Integer rank;
     private String prefer_type;
@@ -32,6 +32,8 @@ public class UserInfo extends BaseEntity {
     private String picture;
     @Enumerated(EnumType.STRING)
     private Locations area;
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
     private String city;
     @ElementCollection(fetch = FetchType.LAZY) @Enumerated(EnumType.STRING)
     private List<LanguageTypes> languages;
@@ -49,11 +51,12 @@ public class UserInfo extends BaseEntity {
     private Set<Study> userStudyJoins  = new HashSet<>();
 
     @Builder
-    private UserInfo(Long id, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, String identifier) {
+    private UserInfo(Long id, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
         this.id = id;
         this.picture = picture;
         this.username = username;
         this.email = email;
+        this.provider = provider;
         this.bjname = bjname;
         this.rank = rank;
         this.prefer_type = prefer_type;
@@ -63,7 +66,6 @@ public class UserInfo extends BaseEntity {
         this.solvedProblem = solvedProblem;
         this.solveProblemLevel = solveProblemLevel;
         this.solved = solved;
-        this.identifier = identifier;
     }
     public void update(Integer rank, SolvedProblemDto solvedProblem, UserProfileDto userProfile){
         this.rank = rank;
