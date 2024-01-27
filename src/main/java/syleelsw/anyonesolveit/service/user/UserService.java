@@ -19,6 +19,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.Locations;
+import syleelsw.anyonesolveit.service.study.NoticeService;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
 import java.util.*;
@@ -32,6 +33,7 @@ public class UserService {
     private final ValidationService validationService;
     private final ParticipationRepository participationRepository;
     private final BaekjoonInformationRepository baekjoonInformationRepository;
+    private final NoticeService noticeService;
     private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
@@ -106,7 +108,7 @@ public class UserService {
                 .build();
     }
     @Transactional
-    private Callable<Set<Integer>> createTask(String url) {
+    public Callable<Set<Integer>> createTask(String url) {
         RestTemplate restTemplate = new RestTemplate();
         return () -> {
             Set<Integer> set = new HashSet<>();
@@ -192,5 +194,11 @@ public class UserService {
         BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(myPage.getBjname()).get();
         user.setRank(baekjoonInformation.getRank());
         user.setSolved(baekjoonInformation.getSolved());
+    }
+
+    public ResponseEntity<NoticeResponse> getNotices(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        return noticeService.getNoticesByUser(user);
     }
 }

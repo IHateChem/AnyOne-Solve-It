@@ -14,4 +14,6 @@ public interface NoticeRepository  extends JpaRepository<Notice, Long> {
     @Modifying
     @Query(value = "UPDATE Notice n SET n.toUser = :nextUser WHERE n.toUser = :user AND n.noticeType IN (5, 6)")
     void changeAllStudyManagerNotice(UserInfo user, UserInfo nextUser);
+
+    Optional<List<Notice>> findAllByToUserOrderByModifiedDateTimeDesc(UserInfo userInfo);
 }
