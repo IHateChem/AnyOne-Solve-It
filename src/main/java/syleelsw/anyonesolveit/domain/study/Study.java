@@ -11,6 +11,7 @@ import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ public class Study extends BaseEntity {
     private Long id;
     private String title;
     private String description;
+    private String openchat;
     @Enumerated(EnumType.STRING)
     private LanguageTypes language;
     @Enumerated(EnumType.STRING)
@@ -52,9 +54,10 @@ public class Study extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private UserInfo user;
     @Builder
-    private Study(Long id, String title, String description,Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
+    private Study(Long id, String title, String description, String openchat, Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
         this.id = id;
         this.title = title;
+        this.openchat = openchat;
         this.description = description;
         this.language = language;
         this.level = level;
@@ -71,6 +74,7 @@ public class Study extends BaseEntity {
         return Study.builder()
                 .title(studyDto.getTitle())
                 .description(studyDto.getDescription())
+                .openchat(studyDto.getOpenchat())
                 .language(studyDto.getLanguage())
                 .level(studyDto.getLevel())
                 .area(studyDto.getArea())

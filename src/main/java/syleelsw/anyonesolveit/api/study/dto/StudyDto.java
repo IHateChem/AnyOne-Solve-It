@@ -32,10 +32,12 @@ public class StudyDto {
     private String frequency;
     private String study_time;
     private List<Long> members;
+    private String openchat;
     @Builder
-    private StudyDto(String title,String city,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
+    private StudyDto(String title,String city, String openchat,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
         this.title = title;
         this.description = description;
+        this.openchat = openchat;
         this.city = city;
         this.language = language;
         this.level = level;

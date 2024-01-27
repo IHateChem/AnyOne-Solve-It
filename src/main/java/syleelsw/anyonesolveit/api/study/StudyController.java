@@ -30,7 +30,7 @@ public class StudyController {
     }
     @GetMapping("/studies/{id}")
     public ResponseEntity getStudy(@RequestHeader String Access, @PathVariable Long id){
-        return studyService.getStudy(id);
+        return studyService.getStudy(Access, id);
     }
 
     @PutMapping("/studies/{id}")
@@ -41,6 +41,11 @@ public class StudyController {
     @DeleteMapping("/studies/{id}")
     public ResponseEntity delStudy(@RequestHeader String Access, @PathVariable Long id){
         return studyService.delStudy(Access, id);
+    }
+
+    @GetMapping("/studies/{id}/search/{problem}")
+    public ResponseEntity getSearchProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
+        return studyService.getSearchProblem(id, problem);
     }
 
     @DeleteMapping("/studies/{id}/suggestions")

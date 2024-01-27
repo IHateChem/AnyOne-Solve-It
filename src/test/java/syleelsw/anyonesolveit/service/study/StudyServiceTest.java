@@ -1,7 +1,6 @@
 package syleelsw.anyonesolveit.service.study;
 
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
 import syleelsw.anyonesolveit.api.study.dto.*;
-import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
+import syleelsw.anyonesolveit.api.user.dto.NoticeDto;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
@@ -26,13 +24,12 @@ import syleelsw.anyonesolveit.etc.*;
 import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.user.UserService;
 
-import javax.xml.stream.Location;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest @Slf4j @Transactional
 class StudyServiceTest {
@@ -44,6 +41,8 @@ class StudyServiceTest {
     private StudyRepository studyRepository;
     @Autowired
     private StudyService studyService;
+    @Autowired
+    private UserService userService;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
     @Autowired
@@ -97,6 +96,101 @@ class StudyServiceTest {
                 .period("1주").build();
     }
 
+    @DisplayName("스터디 문제 제안 테스트, 잘못된 문제가 들어오면 isExist = false, whoSolved = [], 푼사람이 있으면 푼사람들 전부 들어가야함. ")
+    @Test
+    void test(){
+        //given
+
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = response.getBody().getId();
+        StudyResponse study = studyService.getStudy(jwt, studyId).getBody();
+        //when
+        ResponseEntity<SearchProblemDto> notExistResponse = studyService.getSearchProblem(studyId, 1000034214);
+        ResponseEntity<SearchProblemDto> existResponse = studyService.getSearchProblem(studyId, 1000);
+
+        //then
+        assertThat(notExistResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(notExistResponse.getBody().isExist()).isFalse();
+        assertThat(notExistResponse.getBody().getWhoSolved()).hasSize(0);
+
+        assertThat(existResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(existResponse.getBody().isExist()).isTrue();
+        assertThat(existResponse.getBody().getWhoSolved()).hasSize(2);
+    }
+    @DisplayName("알림 테스트 타입 1 - 6")
+    @Test
+    void NoticeTest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        UserInfo user3 = mkUserInfo(true, "syleelsj");
+        UserInfo savedUser3 = userRepository.save(user3);
+
+        List<Long> members = List.of(savedUser1.getId());
+        StudyDto studyDto = studyBuilder(members);
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        String jwt2 = jwtTokenProvider.createJwt(savedUser2.getId(),TokenType.ACCESS);
+        String jwt3 = jwtTokenProvider.createJwt(savedUser3.getId(),TokenType.ACCESS);
+        ResponseEntity<StudyResponse> response = studyService.createStudy(jwt, studyDto);
+        Long studyId = Objects.requireNonNull(response.getBody()).getId();
+
+        //when - then
+
+        //type 5 누군가 스터디 신청 했습니다.
+        ParticipationDTO succParticipationDTO = ParticipationDTO.builder().message("HI").studyId(studyId).build();
+        String participationId = studyService.makeParticipation(jwt2, succParticipationDTO).getBody();
+        NoticeDto type5 = Objects.requireNonNull(userService.getNotices(jwt).getBody()).getNotices().get(0);
+        assertThat(type5.getNoticeType()).isEqualTo(5);
+        assertThat(type5.getUsername()).isEqualTo(user2.getUsername());
+
+        //type 1 내가 신청한 스터디 참가 승인 되었습니다.
+        studyService.confirmParticipation(jwt, participationId, true);
+        NoticeDto type1 = Objects.requireNonNull(userService.getNotices(jwt2).getBody()).getNotices().get(0);
+        assertThat(type1.getNoticeType()).isEqualTo(1);
+
+        //type 2 내가 신청한 스터디 참가 거절  되었습니다.
+        String participationId2 = studyService.makeParticipation(jwt3, succParticipationDTO).getBody();
+        studyService.confirmParticipation(jwt, participationId2, false);
+        NoticeDto type2 = Objects.requireNonNull(userService.getNotices(jwt3).getBody()).getNotices().get(0);
+        assertThat(type2.getNoticeType()).isEqualTo(2);
+
+
+        //type 6 누군가 스터디를 나갔습니다.
+        String participationId3 = studyService.makeParticipation(jwt3, succParticipationDTO).getBody();
+        ResponseEntity responseEntity = studyService.confirmParticipation(jwt, participationId3, true);
+        ResponseEntity responseEntity1 = studyService.studyOut(jwt3, studyId);
+        NoticeDto type6 = Objects.requireNonNull(userService.getNotices(jwt).getBody()).getNotices().get(0);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(type6.getNoticeType()).isEqualTo(6);
+        assertThat(type6.getUsername()).isEqualTo(user3.getUsername());
+
+        //type 3 스터디 장이 변경되었을때 변경된사람(새로 스터디장 된사람에게)
+        String participationId4 = studyService.makeParticipation(jwt3, succParticipationDTO).getBody();
+        studyService.changeManger(jwt, studyId, user2.getId());
+        List<NoticeDto> type3 = Objects.requireNonNull(userService.getNotices(jwt2).getBody()).getNotices();
+        assertThat(type3).hasSize(7);
+        assertThat(type3.get(0).getNoticeType()).isEqualTo(3);
+        assertThat(type3.get(1).getNoticeType()).isEqualTo(5);
+
+        //type 4 참가하고 있던 스터디가 삭제 되었습니다.
+        ResponseEntity responseEntity2 = studyService.delStudy(jwt2, studyId);
+        assertThat(responseEntity2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        NoticeDto type4_1 = Objects.requireNonNull(userService.getNotices(jwt).getBody()).getNotices().get(0);
+        NoticeDto type4_2 = Objects.requireNonNull(userService.getNotices(jwt2).getBody()).getNotices().get(0);
+        assertThat(type4_1.getNoticeType()).isEqualTo(4);
+        assertThat(type4_2.getNoticeType()).isEqualTo(4);
+    }
     @DisplayName("스터디장 변경을 테스트합니다. 권한없는 친구가 요청하면 400, 권한 있으면 200을 반환 합니다. 실제로 스터디장이 바뀌어야 합니다.")
     @Test
     void changeStudyManagerTest(){
@@ -130,8 +224,8 @@ class StudyServiceTest {
         UserInfo user1 = mkUserInfo(true, "syleelsw");
         UserInfo savedUser1 = userRepository.save(user1);
         UserInfo user2 = mkUserInfo(true, "igy2840");
-        UserInfo user3 = mkUserInfo(true, "syleelsj");
         UserInfo savedUser2 = userRepository.save(user2);
+        UserInfo user3 = mkUserInfo(true, "syleelsj");
         UserInfo savedUser3 = userRepository.save(user3);
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
         StudyDto studyDto = studyBuilder(members);
@@ -442,7 +536,7 @@ class StudyServiceTest {
 
         studyService.putStudy(StudyId, studyDto1);
         //when
-        Study studyResponse = (Study) studyService.getStudy(StudyId).getBody();
+        StudyResponse studyResponse = studyService.getStudy(jwt, StudyId).getBody();
         assertThat(studyResponse.getDescription()).isEqualTo(studyDto1.getDescription());
         //then
     }
@@ -661,6 +755,8 @@ class StudyServiceTest {
         assertThat(studyRepository.findById(study_id).isPresent()).isFalse();
         //then
     }
+
+
     @DisplayName("스터디를 만들면 조회가 가능해야한다.")
     @Test
     void getStudytest(){
@@ -703,7 +799,7 @@ class StudyServiceTest {
         assertThat(study1.getUser().getId()).isEqualTo(1l);
         log.info(study1.toString());
 
-        ResponseEntity<Study> response1 = studyService.getStudy(study_id);
+        ResponseEntity<StudyResponse> response1 = studyService.getStudy(jwt, study_id);
         assertThat(response1.getBody().getId()).isEqualTo(study_id);
         //UserStudyJoin studyJoin = study1.getStudyJoin();
         //assertThat(studyJoin.getUser().getId()).isEqualTo(1l);

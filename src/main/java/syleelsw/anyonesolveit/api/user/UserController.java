@@ -36,7 +36,6 @@ public class UserController {
 
     @PostMapping("/mypage")
     public ResponseEntity createMyPage(@RequestHeader String Access, @Validated @RequestBody MyPageDto myPage){
-
         return userService.createMyPage(Access, myPage);
     }
     @PutMapping("/mypage")
@@ -52,5 +51,10 @@ public class UserController {
     @GetMapping("/mypage/participation") //내가 스터디에 참가신청한것들 목록보기
     public ResponseEntity getMyParticipation(@RequestHeader String Access){
         return userService.getMyParticipation(Access);
+    }
+
+    @GetMapping("/notices")
+    public ResponseEntity getNotices(@RequestHeader String Access){
+        return userService.getNotices(Access);
     }
 }

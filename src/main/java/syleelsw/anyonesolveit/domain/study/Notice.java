@@ -3,13 +3,14 @@ package syleelsw.anyonesolveit.domain.study;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import syleelsw.anyonesolveit.domain.BaseEntity;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) @Table(indexes = @Index(name = "to_index", columnList = "to_user_id"))
-public class Notice {
+public class Notice extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @NotNull

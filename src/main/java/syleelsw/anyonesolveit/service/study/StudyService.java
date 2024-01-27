@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -27,6 +26,7 @@ import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -45,6 +45,7 @@ public class StudyService {
     private final StudyProblemRepository studyProblemRepository;
     private final ParticipationRepository participationRepository;
     private final NoticeService noticeService;
+    private final StudyUpdater studyUpdater;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
@@ -96,11 +97,13 @@ public class StudyService {
     private static boolean checkOnlineAreaValidity(StudyDto studyDto) {
         return studyDto.getMeeting_type().equals("온라인") && studyDto.getArea().equals("ALL");
     }
-
-    //todo: aop 걸어서 업데이트 하기.
-    public ResponseEntity getStudy(Long id) {
+    @Transactional
+    public ResponseEntity<StudyResponse> getStudy(String access, Long id) {
+        Long userId = jwtTokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
         Study study = studyRepository.findById(id).get();
-        return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
+        studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
+        return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
     }
     private List listSplitter(List t,int page){
         if(t.size() > (page-1)*maxPage){
@@ -170,7 +173,7 @@ public class StudyService {
             return false;
         }
         Study study = studyOptional.get();
-        return study.getUser().getId() == userId;
+        return study.getUser().getId().equals(userId);
     }
     @Transactional
     public ResponseEntity delStudy(String access, Long id) {
@@ -188,37 +191,35 @@ public class StudyService {
         Problem forStoreProblem = Problem.of(ProblemResponse.of(problem));
         storeProblem.put(id, forStoreProblem);
     }
+
+    private Problem getProblemInfoFromSolvedAc(Integer problemId){
+        log.info("없는 문제.. {}", problemId);
+        String url = "https://solved.ac/api/v3/problem/show?problemId=" + problemId;
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        // HTTP POST 요청 보내기
+        ResponseEntity<SolvedacItem> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                request,
+                SolvedacItem.class
+        );
+        SolvedacItem solvedacItem = response.getBody();
+        return problemRepository.save(Problem.of( ProblemResponse.of(solvedacItem)));
+    }
     //todo? id와 스터디 검증?
     public ResponseEntity getStudyProblem(Long id, Integer problemId) {
-
-        Optional<Problem> problem = problemRepository.findById(problemId);
-        Optional<Study> studyOptional = studyRepository.findById(id);
-        ProblemResponse problemResponse;
-        if(problem.isEmpty()){
-            log.info("없는 문제.. {}", problemId);
-            String url = "https://solved.ac/api/v3/problem/show?problemId=" + problemId;
-            RestTemplate restTemplate = new RestTemplate();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<String> request = new HttpEntity<>(headers);
-            // HTTP POST 요청 보내기
-            try{
-                ResponseEntity<SolvedacItem> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        request,
-                        SolvedacItem.class
-                );
-                SolvedacItem solvedacItem = response.getBody();
-                problemResponse = ProblemResponse.of(solvedacItem);
-                problem = Optional.of(problemRepository.save(Problem.of(problemResponse)));
-            }catch (HttpClientErrorException e){
-                return getBadResponse();
-            }
-        }else {
-            problemResponse = ProblemResponse.of(problem.get());
+        Problem problem;
+        try {
+            problem = problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
+        }catch(HttpClientErrorException e){
+            return getBadResponse();
         }
-        StudyProblemEntity studyProblemEntity = StudyProblemEntity.builder().id(id +"_"+problemId).problem(problem.get()).study(studyOptional.get()).build();
+        ProblemResponse problemResponse = ProblemResponse.of(problem);
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        StudyProblemEntity studyProblemEntity = StudyProblemEntity.builder().id(id +"_"+problemId).problem(problem).study(studyOptional.get()).build();
         studyProblemRepository.save(studyProblemEntity);
         return new ResponseEntity(problemResponse, HttpStatus.OK);
 
@@ -257,7 +258,7 @@ public class StudyService {
         return getGoodResponse();
     }
     @Transactional
-    public ResponseEntity makeParticipation(String access, ParticipationDTO participationDTO) {
+    public ResponseEntity<String> makeParticipation(String access, ParticipationDTO participationDTO) {
         Long userId = jwtTokenProvider.getUserId(access);
         //스터디가 존재해야 신청할 수 있다.
         Long studyId = participationDTO.getStudyId();
@@ -320,8 +321,12 @@ public class StudyService {
         } catch (IllegalAccessException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
         Participation participation = participationRepository.findById(participationId).get();
+        Long studyId = participation.getStudy().getId();
+        Study study = studyRepository.findById(studyId).get();
+        study.getMembers().add(participation.getUser());
+        studyRepository.save(study);
+
         ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
         participation.setState(state);
         int noticeType = confirm ? 1 : 2;
@@ -362,7 +367,7 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Study> studyOptional = studyRepository.findById(id);
-        log.info("Study 나가기. Study: {}", studyOptional.get());
+        log.info("Study 나가기. Study: {}", studyOptional.get().getMembers());
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
 
@@ -373,6 +378,7 @@ public class StudyService {
         study.getMembers().remove(user);
         studyRepository.save(study);
 
+        log.info("스터디원 제거 성공 {}", study.getMembers().contains(user));
         noticeService.createNotice56(study, study.getUser(), 6, user);
         return getGoodResponse();
     }
@@ -415,5 +421,18 @@ public class StudyService {
         //기존 스터디장이 받아야 하는 알림 변경
         noticeService.changeStudyManager(user, nextUser, study);
         return getGoodResponse();
+    }
+
+    public ResponseEntity<SearchProblemDto> getSearchProblem(Long studyId, Integer problemId) {
+        Optional<Study> studyOptional = studyRepository.findById(studyId);
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+        boolean isExist = true;
+        try {
+            problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
+        }catch(HttpClientErrorException e){
+            isExist = false;
+        }
+        return new ResponseEntity(SearchProblemDto.of(isExist, study, problemId), HttpStatus.OK);
     }
 }
