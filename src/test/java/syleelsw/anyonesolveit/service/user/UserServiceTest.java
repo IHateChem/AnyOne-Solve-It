@@ -70,6 +70,7 @@ class UserServiceTest {
                 .period("1주").build();
     }
 
+
     @DisplayName("내가 만든 스터디에 지원한 사람들 확인테스트 ")
     @Test
     void 스터디지원자test(){

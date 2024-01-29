@@ -18,7 +18,6 @@ import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.service.user.UserService;
-import syleelsw.anyonesolveit.service.validation.ValidationService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 public class StudyUpdater {
     private final StudyRepository studyRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
     private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     @Scheduled(cron = "0 0 0 * * *")
