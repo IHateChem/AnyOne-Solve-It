@@ -373,18 +373,24 @@ public class StudyService {
 
         //study에 없는 사람이 요청시 400
         if(!study.getMembers().contains(user)) return getBadResponse();
-        //todo 스터디 장일때 추가
+
+        if(study.getUser().equals(user)){
+            return getGoodResponse(Map.of("isManager", true));
+        }
 
         study.getMembers().remove(user);
         studyRepository.save(study);
 
         log.info("스터디원 제거 성공 {}", study.getMembers().contains(user));
         noticeService.createNotice56(study, study.getUser(), 6, user);
-        return getGoodResponse();
+        return getGoodResponse(Map.of("isManager", false));
     }
 
     private static ResponseEntity getGoodResponse() {
         return new ResponseEntity(HttpStatus.OK);
+    }
+    private static ResponseEntity getGoodResponse(Object o) {
+        return new ResponseEntity(o, HttpStatus.OK);
     }
 
     private static ResponseEntity getBadResponse() {
