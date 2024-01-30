@@ -211,4 +211,9 @@ public class UserService {
         noticeService.delById(id);
         return new ResponseEntity(HttpStatus.OK);
     }
+
+    public ResponseEntity searchUser(String userId) {
+        List<String> userInfos = userRepository.searchByEmail(userId);
+        return new ResponseEntity(Map.of("results", userInfos), HttpStatus.OK);
+    }
 }

@@ -21,6 +21,7 @@ import syleelsw.anyonesolveit.service.study.StudyService;
 import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,6 +56,15 @@ class UserServiceTest {
                 .provider(Provider.test)
                 .build();
     }
+    public UserInfo mkUserInfo2(Boolean isFirst, String email, String bjName){
+        return UserInfo.builder()
+                .email(email)
+                .username(email)
+                .isFirst(isFirst)
+                .bjname(bjName)
+                .provider(Provider.test)
+                .build();
+    }
 
     private StudyDto studyBuilder(List<Long> members){
         return StudyDto.builder()
@@ -69,7 +79,31 @@ class UserServiceTest {
                 .members(members)
                 .period("1주").build();
     }
+    @DisplayName("유저검색 테스트")
+    @Test
+    void useSearchTest(){
+        //given
+        UserInfo user1 = mkUserInfo2(true, "syleelsw@gmail.com", "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo2(true,"igy2840@gmail.com", "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
 
+        //when
+        ResponseEntity<Map<String, List>> responseEntity = userService.searchUser("@g");
+        ResponseEntity<Map<String, List>> responseEntity2 = userService.searchUser("syleelsw@g");
+        ResponseEntity<Map<String, List>> responseEntity3 = userService.searchUser("ail.com");
+        ResponseEntity<Map<String, List>> responseEntity4 = userService.searchUser("dfasfsdf");
+
+        //then
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody().get("results")).hasSize(2);
+        assertThat(responseEntity2.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity2.getBody().get("results")).hasSize(1);
+        assertThat(responseEntity3.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity3.getBody().get("results")).hasSize(2);
+        assertThat(responseEntity4.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity4.getBody().get("results")).hasSize(0);
+    }
 
     @DisplayName("내가 만든 스터디에 지원한 사람들 확인테스트 ")
     @Test

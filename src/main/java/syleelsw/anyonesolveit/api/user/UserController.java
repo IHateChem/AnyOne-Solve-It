@@ -62,4 +62,9 @@ public class UserController {
     public ResponseEntity delNotices(@RequestHeader String Access,@PathVariable Long id){
         return userService.delNotices(Access, id);
     }
+
+    @GetMapping("/api/user/search")
+    public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String userId){
+        return userService.searchUser(userId);
+    }
 }
