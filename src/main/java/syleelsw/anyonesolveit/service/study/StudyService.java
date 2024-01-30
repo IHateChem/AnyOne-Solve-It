@@ -116,6 +116,7 @@ public class StudyService {
 
 
     public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, String locations, String term) {
+        if(term.length()>20){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
         List<Study> studies = null;
         String[] split = locations.split(" ");
         String city;

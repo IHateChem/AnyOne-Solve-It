@@ -31,6 +31,7 @@ public class StudyDto {
     private String period;
     private String frequency;
     private String study_time;
+    @Size(max=30)
     private List<Long> members;
     private String openchat;
     @Builder
