@@ -3,8 +3,10 @@ package syleelsw.anyonesolveit.domain.study.Repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import syleelsw.anyonesolveit.domain.study.Notice;
 import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 
 import java.util.List;
@@ -16,4 +18,7 @@ public interface NoticeRepository  extends JpaRepository<Notice, Long> {
     void changeAllStudyManagerNotice(UserInfo user, UserInfo nextUser);
 
     Optional<List<Notice>> findAllByToUserOrderByModifiedDateTimeDesc(UserInfo userInfo);
+    @Modifying
+    @Query(value = "DELETE FROM Notice n WHERE n.study = :study")
+    void deleteAllByStudy(@Param("study") Study study);
 }

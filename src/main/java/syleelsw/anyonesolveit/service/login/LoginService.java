@@ -2,8 +2,7 @@ package syleelsw.anyonesolveit.service.login;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
-import org.springframework.data.redis.core.TimeToLive;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +18,9 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoInfo;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenRequest;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenResponse;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
 
 import java.util.Map;
@@ -32,6 +34,13 @@ public class LoginService {
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
 
+    String kakaoUrl = "https://kauth.kakao.com/oauth";
+    @Value("${spring.kakao.client_id}")
+    String kakao_id;
+    @Value("${spring.kakao.client_secret}")
+    String kakao_secret;
+    @Value("${spring.kakao.redirect_uri}")
+    String kakao_redirect_url;
     @Transactional
     public ResponseEntity updateRefreshToken(String jwt){
         Long id = provider.getUserId(jwt);
@@ -99,7 +108,8 @@ public class LoginService {
         log.info("Join {}", email);
         UserInfo userInfo = UserInfo.builder()
                 .email(email)
-                .username(username)
+                .username(email)
+                .name(username)
                 .email(email)
                 .isFirst(true)
                 .picture(picture)
@@ -122,6 +132,8 @@ public class LoginService {
                 return googleLogin(authCode, provider);
             case NAVER:
                 return naverLogin(authCode, authState, provider);
+            case KAKAO:
+                return new ResponseEntity<>(kakaoLogin(),HttpStatus.OK);
             default:
                 throw new IllegalStateException("잘못된 Provider 입니다.");
         }
@@ -131,5 +143,30 @@ public class LoginService {
         Long userId = provider.getUserId(access);
         refreshRedisRepository.deleteById(userId);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public String kakaoLogin() {
+        String url = kakaoUrl +"/authorize?response_type=code&client_id="+ kakao_id + "&redirect_uri=" + kakao_redirect_url;
+        log.info(url);
+        RestTemplate restTemplate = new RestTemplate();
+        return restTemplate.getForObject(url, String.class);
+    }
+
+    public ResponseEntity getkakaoLogin(String code) {
+        String url = kakaoUrl + "/token";
+        RestTemplate restTemplate = new RestTemplate();
+        KakaoInfo kakaoResponse = tokenValidationService.getResponseFromKakao(KakaoTokenRequest.builder()
+                .redirect_uri(kakao_redirect_url)
+                .grant_type("authorization_code")
+                .client_id(kakao_id)
+                .client_secret(kakao_secret)
+                .code(code)
+                .build(), url);
+        log.info("CODe : {}", code);
+        log.info(kakaoResponse.toString());
+        String email = kakaoResponse.getKakao_account().getEmail();
+        String username =kakaoResponse.getKakao_account().getProfile().getNickname();
+        String picture = kakaoResponse.getKakao_account().getProfile().getProfile_image_url();
+        return findUserAndJoin(email, username, Provider.KAKAO, picture);
     }
 }

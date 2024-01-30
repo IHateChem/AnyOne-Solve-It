@@ -102,6 +102,7 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Study study = studyRepository.findById(id).get();
+        study.setPopularity(study.getPopularity()+1);
         studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
         return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
     }
@@ -184,6 +185,7 @@ public class StudyService {
 
         //알림생성
         studyRepository.delete(study);
+        noticeService.deleteAllByStudy(study);
         study.getMembers().forEach(t-> noticeService.createNoticeType1to4(study, t, 4));
         return getGoodResponse();
     }

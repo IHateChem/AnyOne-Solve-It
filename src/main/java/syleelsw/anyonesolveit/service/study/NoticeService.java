@@ -48,4 +48,8 @@ public class NoticeService {
     public void delById(Long id) {
         noticeRepository.deleteById(id);
     }
+
+    public void deleteAllByStudy(Study study) {
+        noticeRepository.deleteAllByStudy(study);
+    }
 }

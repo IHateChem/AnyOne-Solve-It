@@ -28,6 +28,20 @@ public class LoginController {
     public ResponseEntity postLogin(@RequestBody @Validated LoginBody loginBody){
         return loginService.login(loginBody);
     }
+
+    @GetMapping("/login/kakao/tst")
+    public String tkakaoLogin(){
+        return loginService.kakaoLogin();
+    }
+
+    @PostMapping("/login/kakao")
+    public String kakaoLogin(){
+        return loginService.kakaoLogin();
+    }
+    @GetMapping("/login/kakao")
+    public ResponseEntity getkakaoLogin(@RequestParam String code){
+        return loginService.getkakaoLogin(code);
+    }
     @GetMapping("/test")
     public ResponseEntity getTest(){
         return new ResponseEntity(loginService.test("syleelsw@snu.ac.kr"), HttpStatus.OK);

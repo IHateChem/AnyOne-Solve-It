@@ -24,6 +24,7 @@ public class UserInfo extends BaseEntity {
     private Long id;
 
     private String username;
+    private String name;
     private String email;
     private String bjname;
     private Integer rank;
@@ -51,8 +52,9 @@ public class UserInfo extends BaseEntity {
     private Set<Study> userStudyJoins  = new HashSet<>();
 
     @Builder
-    private UserInfo(Long id, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
+    private UserInfo(Long id,String name,  String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
         this.id = id;
+        this.name = name;
         this.picture = picture;
         this.username = username;
         this.email = email;

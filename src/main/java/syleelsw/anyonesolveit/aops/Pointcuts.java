@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 
 public class Pointcuts {
-    @Pointcut("execution(* syleelsw.anyonesolveit.api..*(..))")
+    @Pointcut("execution(* syleelsw.anyonesolveit.api..*(..)) && !execution(* syleelsw.anyonesolveit.api.login..*(..))")
     public void allApi(){}
     @Pointcut("execution(* syleelsw.anyonesolveit.service..*(..))")
     public void allService(){}
