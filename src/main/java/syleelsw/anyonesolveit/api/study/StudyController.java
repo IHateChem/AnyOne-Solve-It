@@ -75,7 +75,7 @@ public class StudyController {
         return studyService.getSuggestion(id);
     }
     @PostMapping("/participation")
-    public ResponseEntity makeParticipation(@RequestHeader String Access, @RequestBody ParticipationDTO participationDTO){
+    public ResponseEntity makeParticipation(@RequestHeader String Access, @RequestBody @Validated ParticipationDTO participationDTO){
         return studyService.makeParticipation(Access, participationDTO);
     }
 

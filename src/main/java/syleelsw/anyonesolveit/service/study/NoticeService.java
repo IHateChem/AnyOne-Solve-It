@@ -39,4 +39,17 @@ public class NoticeService {
         List<Notice> allByToUser = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user).get();
         return new ResponseEntity(new NoticeResponse(allByToUser), HttpStatus.OK);
     }
+
+    @Transactional
+    public Optional<Notice> findById(Long id){
+        return noticeRepository.findById(id);
+    }
+
+    public void delById(Long id) {
+        noticeRepository.deleteById(id);
+    }
+
+    public void deleteAllByStudy(Study study) {
+        noticeRepository.deleteAllByStudy(study);
+    }
 }

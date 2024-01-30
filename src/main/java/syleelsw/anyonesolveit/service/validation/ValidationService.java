@@ -32,6 +32,7 @@ public class ValidationService {
     private final ParticipationRepository participationRepository;
     private final BaekjoonInformationRepository baekjoonInformationRepository;
     public boolean isValidateBJId(String bjId){
+        if(bjId.length()>20){return false;}
         Optional<BaekjoonInformation> bjInfo = baekjoonInformationRepository.findById(bjId);
         if(bjInfo.isPresent()){ //캐쉬 가능
             return true;

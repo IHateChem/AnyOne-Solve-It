@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -19,6 +20,9 @@ import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleRequest;
 import syleelsw.anyonesolveit.service.login.dto.google.GoogleResponse;
 import syleelsw.anyonesolveit.aops.Timer;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoInfo;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenRequest;
+import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenResponse;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfoResponse;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverRequest;
@@ -87,6 +91,36 @@ public class TokenValidationService {
         HttpEntity<MultiValueMap<String, String>> naverProfileRequest = new HttpEntity<>(headers);
         return naverProfileRequest;
     }
+    @Timer("Kakao Authcode")
+    public KakaoInfo getResponseFromKakao(KakaoTokenRequest kakaoTokenRequest, String url) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequestHttpEntity = new HttpEntity<>(kakaoTokenRequest.toMultiValueMap(), headers);
+        ResponseEntity<KakaoTokenResponse> kakaoTokenResponseResponseEntity= restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                kakaoTokenRequestHttpEntity,
+                KakaoTokenResponse.class
+        );
+
+        KakaoTokenResponse kakaoTokenResponse = kakaoTokenResponseResponseEntity.getBody();
+        String accessToken = kakaoTokenResponse.getAccess_token();
+        log.info("token: {}", accessToken);
+        String kakaoInfoUrl = "https://kapi.kakao.com/v2/user/me";// + "?property_keys=[\"kakao_account.profile\",\"kakao_account.name\",\"kakao_account.email\"]";
+        HttpEntity<MultiValueMap<String, String>> kakaoProfileRequest = makeProfileRequest(accessToken);
+        ResponseEntity<KakaoInfo> responseEntity = restTemplate.exchange(
+                kakaoInfoUrl,
+                HttpMethod.POST,
+                kakaoProfileRequest,
+                KakaoInfo.class
+        );
+        log.info("reponse {}", responseEntity);
+
+        return responseEntity.getBody();
+
+    }
 
     @Timer("Google Authcode")
     public ResponseEntity<GoogleInfoResponse> getResponseFromGoogle(String authCode, RestTemplate restTemplate){
@@ -146,4 +180,5 @@ public class TokenValidationService {
         headers.add("RefreshToken", refresh);
         return headers;
     }
+
 }

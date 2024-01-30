@@ -102,6 +102,7 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Study study = studyRepository.findById(id).get();
+        study.setPopularity(study.getPopularity()+1);
         studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
         return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
     }
@@ -115,6 +116,7 @@ public class StudyService {
 
 
     public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, String locations, String term) {
+        if(term.length()>20){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
         List<Study> studies = null;
         String[] split = locations.split(" ");
         String city;
@@ -184,6 +186,7 @@ public class StudyService {
 
         //알림생성
         studyRepository.delete(study);
+        noticeService.deleteAllByStudy(study);
         study.getMembers().forEach(t-> noticeService.createNoticeType1to4(study, t, 4));
         return getGoodResponse();
     }
@@ -373,18 +376,24 @@ public class StudyService {
 
         //study에 없는 사람이 요청시 400
         if(!study.getMembers().contains(user)) return getBadResponse();
-        //todo 스터디 장일때 추가
+
+        if(study.getUser().equals(user)){
+            return getGoodResponse(Map.of("isManager", true));
+        }
 
         study.getMembers().remove(user);
         studyRepository.save(study);
 
         log.info("스터디원 제거 성공 {}", study.getMembers().contains(user));
         noticeService.createNotice56(study, study.getUser(), 6, user);
-        return getGoodResponse();
+        return getGoodResponse(Map.of("isManager", false));
     }
 
     private static ResponseEntity getGoodResponse() {
         return new ResponseEntity(HttpStatus.OK);
+    }
+    private static ResponseEntity getGoodResponse(Object o) {
+        return new ResponseEntity(o, HttpStatus.OK);
     }
 
     private static ResponseEntity getBadResponse() {

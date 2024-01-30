@@ -13,6 +13,7 @@ import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.*;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
+import syleelsw.anyonesolveit.domain.study.Notice;
 import syleelsw.anyonesolveit.domain.study.Participation;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
@@ -200,5 +201,19 @@ public class UserService {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         return noticeService.getNoticesByUser(user);
+    }
+
+    public ResponseEntity delNotices(String access, Long id) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Optional<Notice> byId = noticeService.findById(id);
+        if(byId.isEmpty() || !byId.get().getToUser().equals(user)) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        noticeService.delById(id);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public ResponseEntity searchUser(String userId) {
+        List<String> userInfos = userRepository.searchByEmail(userId);
+        return new ResponseEntity(Map.of("results", userInfos), HttpStatus.OK);
     }
 }
