@@ -339,7 +339,7 @@ public class StudyService {
     public ResponseEntity getMyStudy(String access) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        Optional<List<Study>> studies = studyRepository.findStudiesByMember(user);
+        List<Study> studies = studyRepository.findStudiesByMember(user);
         //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
     }
@@ -348,21 +348,22 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
 
-        Optional<List<Study>> managedStudies = studyRepository.findAllByUser(user);
-        Optional<List<Study>> participatedStudies = studyRepository.findStudiesByMember(user);
+        List<Study> managedStudies = studyRepository.findAllByUser(user);
+        List<Study> participatedStudies = studyRepository.findStudiesByMember(user);
         return new ResponseEntity(Map.of("managements", getStudyResponse(managedStudies), "participations", getStudyResponse(participatedStudies)), HttpStatus.OK);
     }
 
     public ResponseEntity getMyStudySelf(String access) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        Optional<List<Study>> studies = studyRepository.findAllByUser(user);
+        List<Study> studies = studyRepository.findAllByUser(user);
         //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
     }
 
-    private static List<StudyResponse> getStudyResponse(Optional<List<Study>> studies) {
-        return studies.get().stream().map(StudyResponse::of).collect(Collectors.toList());
+    private static List<StudyResponse> getStudyResponse(List<Study> studies) {
+        studies.forEach( t-> log.info("hihi {}", t.getUser()));
+        return studies.stream().map(StudyResponse::of).collect(Collectors.toList());
     }
 
     @Transactional

@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-@Entity @Getter @ToString(exclude = {"userStudyJoins"}) @NoArgsConstructor(access = AccessLevel.PROTECTED) @Setter
+@Entity @Getter @NoArgsConstructor(access = AccessLevel.PROTECTED) @Setter
 @Table(indexes = @Index(name = "idx_email", columnList = "email"))
 public class UserInfo extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,8 +48,6 @@ public class UserInfo extends BaseEntity {
     @ColumnDefault("0")
     private Long solved;
 
-    @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = CascadeType.ALL)
-    private Set<Study> userStudyJoins  = new HashSet<>();
 
     @Builder
     private UserInfo(Long id,String name,  String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {

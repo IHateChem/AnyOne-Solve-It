@@ -30,7 +30,6 @@ public class StudyDto {
     private String meeting_type;
     private String period;
     private String frequency;
-    @Size(max=30)
     private Integer how_many;
     @Size(max=50)
     private String study_time;

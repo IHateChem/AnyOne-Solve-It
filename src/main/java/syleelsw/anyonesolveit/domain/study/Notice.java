@@ -9,7 +9,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) @Table(indexes = @Index(name = "to_index", columnList = "to_user_id"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notice extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
