@@ -40,6 +40,7 @@ public class Study extends BaseEntity {
     private String period;
     private String frequency;
     private String study_time;
+    private Integer how_many;
     @ColumnDefault("0")
     private Long popularity;
     @ColumnDefault("0")
@@ -54,8 +55,9 @@ public class Study extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private UserInfo user;
     @Builder
-    private Study(Long id, String title, String description, String openchat, Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
+    private Study(Long id,Integer how_many, String title, String description, String openchat, Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
         this.id = id;
+        this.how_many = how_many;
         this.title = title;
         this.openchat = openchat;
         this.description = description;
@@ -72,6 +74,7 @@ public class Study extends BaseEntity {
 
     public static Study of(StudyDto studyDto, Set<UserInfo> members) {
         return Study.builder()
+                .how_many(studyDto.getHow_many())
                 .title(studyDto.getTitle())
                 .description(studyDto.getDescription())
                 .openchat(studyDto.getOpenchat())

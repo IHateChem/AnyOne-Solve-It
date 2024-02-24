@@ -30,6 +30,8 @@ public class StudyDto {
     private String meeting_type;
     private String period;
     private String frequency;
+    @Size(max=30)
+    private Integer how_many;
     @Size(max=50)
     private String study_time;
     @Size(max=30)
@@ -37,8 +39,9 @@ public class StudyDto {
     @Size(max=500)
     private String openchat;
     @Builder
-    private StudyDto(String title,String city, String openchat,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
+    private StudyDto(String title,Integer how_many, String city, String openchat,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<Long> members) {
         this.title = title;
+        this.how_many = how_many;
         this.description = description;
         this.openchat = openchat;
         this.city = city;

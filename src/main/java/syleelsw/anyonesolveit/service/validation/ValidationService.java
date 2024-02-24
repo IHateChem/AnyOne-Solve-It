@@ -18,10 +18,12 @@ import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
+import syleelsw.anyonesolveit.service.validation.dto.ValidateResponse;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -101,8 +103,12 @@ public class ValidationService {
         }
     }
 
-    public ResponseEntity validateBaekjoonIds(List<String> ids) {
-        List<List<? extends Serializable>> collect = ids.stream().map(t -> List.of(t, isValidateBJId(t))).collect(Collectors.toList());
-        return new ResponseEntity(collect, HttpStatus.OK);
+    public ResponseEntity validateBaekjoonIds(String id) {
+        return new ResponseEntity(
+                ValidateResponse.builder()
+                .valid(isValidateBJId(id))
+                .bjname(id)
+                .build(), HttpStatus.OK);
+
     }
 }

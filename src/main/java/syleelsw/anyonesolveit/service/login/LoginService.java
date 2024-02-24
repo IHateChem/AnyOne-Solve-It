@@ -22,6 +22,8 @@ import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoInfo;
 import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenRequest;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +42,7 @@ public class LoginService {
     @Value("${spring.kakao.client_secret}")
     String kakao_secret;
     @Value("${spring.kakao.redirect_uri}")
-    String kakao_redirect_url;
+    String  kakao_redirect_url;
     @Value("${spring.github.client_id}")
     String github_id;
     @Value("${spring.github.client_secret}")
@@ -137,7 +139,7 @@ public class LoginService {
             case NAVER:
                 return naverLogin(authCode, authState, provider);
             case KAKAO:
-                return new ResponseEntity<>(kakaoLogin(),HttpStatus.OK);
+                return kakaoLogin();
             case GITHUB:
                 return new ResponseEntity<>(gitHubLogin(),HttpStatus.OK);
             default:
@@ -160,11 +162,17 @@ public class LoginService {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    public String kakaoLogin() {
-        String url = kakaoUrl +"/authorize?response_type=code&client_id="+ kakao_id + "&redirect_uri=" + kakao_redirect_url;
-        log.info(url);
+    public ResponseEntity kakaoLogin() {
         RestTemplate restTemplate = new RestTemplate();
-        return restTemplate.getForObject(url, String.class);
+        URI redirectUri = null;
+        try {
+            redirectUri = new URI(kakaoUrl +"/authorize?response_type=code&client_id="+ kakao_id + "&redirect_uri=" + kakao_redirect_url);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setLocation(redirectUri);
+        return new ResponseEntity<>(httpHeaders, HttpStatus.SEE_OTHER);
     }
 
     public ResponseEntity getkakaoLogin(String code) {
@@ -182,7 +190,10 @@ public class LoginService {
         String email = kakaoResponse.getKakao_account().getEmail();
         String username =kakaoResponse.getKakao_account().getProfile().getNickname();
         String picture = kakaoResponse.getKakao_account().getProfile().getProfile_image_url();
-        return findUserAndJoin(email, username, Provider.KAKAO, picture);
+        findUserAndJoin(email, username, Provider.KAKAO, picture);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setLocation(URI.create("localhost:3000/login?email="+email+"&username=" + username + "&picture=" + picture));
+        return new ResponseEntity<>(httpHeaders, HttpStatus.SEE_OTHER);
     }
 
     public ResponseEntity gitHubLogin(String code) {
