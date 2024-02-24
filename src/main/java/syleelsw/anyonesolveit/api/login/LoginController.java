@@ -35,7 +35,7 @@ public class LoginController {
     }
 
     @GetMapping("/login/kakao/tst")
-    public String tkakaoLogin(){
+    public ResponseEntity tkakaoLogin(){
         return loginService.kakaoLogin();
     }
     @GetMapping("/login/github/tst")
@@ -44,7 +44,7 @@ public class LoginController {
     }
 
     @PostMapping("/login/kakao")
-    public String kakaoLogin(){
+    public ResponseEntity kakaoLogin(){
         return loginService.kakaoLogin();
     }
     @GetMapping("/login/kakao")

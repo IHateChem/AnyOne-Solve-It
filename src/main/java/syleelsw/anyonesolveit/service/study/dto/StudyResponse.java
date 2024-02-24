@@ -30,12 +30,16 @@ public class StudyResponse{
     private String study_time;
     private Integer avg_rank;
     private Float avg_solved;
+    private Integer how_many;
     private boolean participated;
 
     private List<StudyResponseMember> members;
+    private StudyResponseMember manager;
     @Builder
-    private StudyResponse(Long id,Integer avg_rank,String openchat, boolean participated,  Float avg_solved, String title,String city,  String description, LanguageTypes language, GoalTypes level, String area, String meeting_type, String period, String frequency, String study_time, List<StudyResponseMember> members) {
+    private StudyResponse(Long id,Integer how_many, StudyResponseMember manager, Integer avg_rank,String openchat, boolean participated,  Float avg_solved, String title,String city,  String description, LanguageTypes language, GoalTypes level, String area, String meeting_type, String period, String frequency, String study_time, List<StudyResponseMember> members) {
         this.id = id;
+        this.how_many = how_many;
+        this.manager = manager;
         this.openchat = openchat;
         this.avg_rank = avg_rank;
         this.avg_solved =avg_solved;
@@ -54,6 +58,7 @@ public class StudyResponse{
     public static StudyResponse of(Study study){
         return builder()
                 .id(study.getId())
+                .how_many(study.getHow_many())
                 .title(study.getTitle())
                 .openchat(study.getOpenchat())
                 .description(study.getDescription())
@@ -66,6 +71,7 @@ public class StudyResponse{
                 .period(study.getPeriod())
                 .frequency(study.getFrequency())
                 .study_time(study.getStudy_time())
+                .manager(new StudyResponseMember(study.getUser()))
                 .members(study.getMembers().stream().map(t -> new StudyResponseMember(t)).collect(Collectors.toList()))
                 .build();
     }
@@ -75,6 +81,8 @@ public class StudyResponse{
                 .id(study.getId())
                 .title(study.getTitle())
                 .description(study.getDescription())
+                .manager(new StudyResponseMember(study.getUser()))
+                .how_many(study.getHow_many())
                 .openchat(study.getOpenchat())
                 .avg_rank(study.getAvg_rank())
                 .avg_solved(study.getAvg_solved())
