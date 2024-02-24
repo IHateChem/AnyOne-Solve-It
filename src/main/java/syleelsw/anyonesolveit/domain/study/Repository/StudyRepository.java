@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface StudyRepository extends JpaRepository<Study, Long> {
-    Optional<List<Study>> findAllByUser(UserInfo user);
+    List<Study> findAllByUser(UserInfo user);
     @Query("SELECT s FROM Study s JOIN s.members m WHERE m = :userInfo")
-    Optional<List<Study>> findStudiesByMember(@Param("userInfo") UserInfo userInfo);
+    List<Study> findStudiesByMember(@Param("userInfo") UserInfo userInfo);
     @Query(value = "select s from Study s" +
             " where (:language = 'ALL' or s.language = :language)" +
             " and (:level = 'ALL' or s.level = :level)" +
