@@ -11,13 +11,10 @@ import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 @Entity @Getter @NoArgsConstructor(access = AccessLevel.PROTECTED) @Setter
-@Table(indexes = @Index(name = "idx_email", columnList = "email"))
+@Table(indexes = @Index(name = "idx_email", columnList = "email")) @ToString
 public class UserInfo extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="user_id")
@@ -69,7 +66,7 @@ public class UserInfo extends BaseEntity {
     }
     public void update(Integer rank, SolvedProblemDto solvedProblem, UserProfileDto userProfile){
         this.rank = rank;
-        this.solvedProblem = solvedProblem.getSolvedProblems();
+        this.solvedProblem = new ArrayList<>(solvedProblem.getSolvedProblems());
         this.solveProblemLevel = solvedProblem.getSolved();
         this.bjname = userProfile.getBjname();
         this.prefer_type = userProfile.getPrefer_type();

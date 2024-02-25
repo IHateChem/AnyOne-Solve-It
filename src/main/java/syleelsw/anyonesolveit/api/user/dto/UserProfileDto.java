@@ -37,7 +37,7 @@ public class UserProfileDto {
         this.isFirst = isFirst;
     }
 
-    public UserProfileDto of(UserInfo userInfo){
+    public static UserProfileDto of(UserInfo userInfo){
         return UserProfileDto.builder()
                 .id(userInfo.getId())
                 .username(userInfo.getUsername())

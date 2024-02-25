@@ -11,6 +11,9 @@ import java.util.Set;
 @Component
 public class ProblemSolvedCountUpdater {
     public void update(Study study) {
-        Set<UserInfo> members = study.getMembers();
+        Long totalSolved = study.getMembers().stream().mapToLong(member -> member.getSolved()).sum();
+        Integer totalRank = study.getMembers().stream().mapToInt(member -> member.getRank()).sum();
+        study.setAvg_solved((float) (totalSolved/study.getMembers().size()));
+        study.setAvg_rank( totalRank/study.getMembers().size());
     }
 }

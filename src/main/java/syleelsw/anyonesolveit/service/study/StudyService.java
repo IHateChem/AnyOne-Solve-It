@@ -89,6 +89,7 @@ public class StudyService {
         //스터디 평균 랭크, 푼 문제수 등 계산
         problemSolvedCountUpdater.update(study);
         study = studyRepository.save(study);
+        log.info("study: {}", study);
         UserStudyJoin userStudyJoin = UserStudyJoin.builder().study(study).user(user).build();
         //serStudyJoinRepository.save(userStudyJoin);
         return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);

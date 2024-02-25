@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.login.Provider;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
+import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
@@ -21,9 +22,12 @@ import syleelsw.anyonesolveit.service.login.dto.google.GoogleInfoResponse;
 import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoInfo;
 import syleelsw.anyonesolveit.service.login.dto.kakao.KakaoTokenRequest;
 import syleelsw.anyonesolveit.service.login.dto.naver.NaverInfo;
+import syleelsw.anyonesolveit.service.user.UserService;
+import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +39,7 @@ public class LoginService {
     private final RefreshRedisRepository refreshRedisRepository;
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
     @Value("${spring.kakao.client_id}")
@@ -72,6 +77,7 @@ public class LoginService {
         UserInfo userInfo = userRepository.findUserByEmail(email);
         String username = "dltjrdn";
         if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
+        findUserAndJoin(email, username, Provider.test, "");
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);
     }
@@ -81,6 +87,13 @@ public class LoginService {
         UserInfo userInfo = userRepository.findUserByEmail(email);
         if(userInfo == null) { userInfo = join(email, username, provider, picture);}
         if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
+        if(userInfo.getBjname()!=null){
+            RankAndSolvedProblem rankAndSolveProblem = userService.getRankAndSolveProblem(userInfo.getBjname());
+            userInfo.setRank(rankAndSolveProblem.rank);
+            userInfo.setSolvedProblem(new ArrayList<>(rankAndSolveProblem.solvedProblemDto.getSolvedProblems()));
+            userInfo.setSolved((long) rankAndSolveProblem.solvedProblemDto.getSolvedProblems().size());
+        }
+        userRepository.save(userInfo);
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
     }
