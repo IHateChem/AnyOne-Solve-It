@@ -21,6 +21,7 @@ import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.NoticeService;
+import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
 import java.util.*;
@@ -52,15 +53,25 @@ public class UserService {
 
     }
 
-    private ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
-        Integer rank = validationService.isValidateBJIdAndGetRank(userProfile.getBjname());
-        if(rank==null){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-        SolvedProblemDto solvedProblem = getSolvedProblem(userProfile.getBjname());
+    public ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
+        RankAndSolvedProblem rankAndProblems = getRankAndSolveProblem(user.getBjname());
+        Integer rank = rankAndProblems.rank;
+        SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
         user.update(rank, solvedProblem, userProfile);
+        userRepository.save(user);
         return new ResponseEntity(HttpStatus.OK);
     }
+
+
+    public RankAndSolvedProblem getRankAndSolveProblem(String bjName){
+        Integer rank = validationService.isValidateBJIdAndGetRank(bjName);
+        if(rank==null){
+            throw new IllegalStateException();
+        }
+        SolvedProblemDto solvedProblem = getSolvedProblem(bjName);
+        return new RankAndSolvedProblem(rank, solvedProblem);
+    }
+
 
     @Transactional
     public ResponseEntity setProfile(String Access, UserProfileDto userProfile){

@@ -21,6 +21,7 @@ import syleelsw.anyonesolveit.service.validation.dto.UserSearchDto;
 import syleelsw.anyonesolveit.service.validation.dto.ValidateResponse;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +37,15 @@ public class ValidationService {
     public boolean isValidateBJId(String bjId){
         if(bjId.length()>20){return false;}
         Optional<BaekjoonInformation> bjInfo = baekjoonInformationRepository.findById(bjId);
-        if(bjInfo.isPresent()){ //캐쉬 가능
+        if(bjInfo.isPresent() && bjInfo.get().getModifiedDateTime().isAfter(LocalDateTime.now().minusDays(1))){ //캐쉬 가능
             return true;
         }
 
         try{
+            log.info("Solvedac에 요청 보내는중... Id : {}", bjId);
             ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
             BaekjoonInformation myBjInfo = BaekjoonInformation.builder().bjname(bjId).rank(response.getBody().getRank()).solved(response.getBody().getSolvedCount()).build();
+
             baekjoonInformationRepository.save(myBjInfo);
             return true;
         }catch (HttpClientErrorException.NotFound notFound){
@@ -65,6 +68,7 @@ public class ValidationService {
                 request,
                 SolvedacUserInfoDto.class
         );
+        log.info("{}", response);
         return response;
     }
 
