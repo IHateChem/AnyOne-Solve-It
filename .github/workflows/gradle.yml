@@ -1,0 +1,97 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Java CI with Gradle
+
+on:
+  #push:
+    #branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    ## 1) git ignore에 등록된 application.properties 파일 생성해주기
+    - name: make application.yml
+      run: |
+        cd ./src/main
+        cd ./resources
+        touch ./application.yml
+        echo "${{ secrets.PROPERTIES }}" > ./application.yml
+      shell: bash
+    - name: make test/application.yml
+      run: |
+        cd ./src/test
+        mkdir resources
+        cd ./resources
+        touch ./application.yml
+        echo "${{ secrets.TESTPROPERTIES }}" > ./application.yml
+      shell: bash
+
+
+    ## 2) 스프링 프로젝트 jar 파일 빌드
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew build --exclude-task test
+    - name: Create SSH directory
+      run: mkdir -p $HOME/.ssh
+
+      
+    - name: Make PEM
+      run: |
+        echo "${{ secrets.REMOTE_SSH_KEY }}" > $HOME/key.pem
+        chmod 400 $HOME/key.pem
+
+
+    ## 3) 기존에 실행 중인 서비스 종료
+    - name: Stop existing service
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.REMOTE_IP }}
+        username: ${{ secrets.REMOTE_SSH_ID }}
+        key: ${{ secrets.REMOTE_SSH_KEY }}
+        port: ${{ secrets.REMOTE_SSH_PORT }}
+        script: |
+          sudo su && sudo sh -c 'systemctl stop anyone'
+
+    ## 4) 빌드된 파일을 EC2로 복사
+    - name: Copy JAR file to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.REMOTE_IP }}
+        username: ${{ secrets.REMOTE_SSH_ID }}
+        key: ${{ secrets.REMOTE_SSH_KEY }}
+        port: ${{ secrets.REMOTE_SSH_PORT }}
+        source: "build/"
+        target: "/deploy/anyone"
+      
+    ## 5) 서비스 실행  
+    - name: Start new service
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.REMOTE_IP }}
+        username: ${{ secrets.REMOTE_SSH_ID }}
+        key: ${{ secrets.REMOTE_SSH_KEY }}
+        port: ${{ secrets.REMOTE_SSH_PORT }}
+        script: |
+            sudo su && sudo sh -c 'systemctl start anyone'
+
+

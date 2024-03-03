@@ -1,0 +1,10 @@
+<!-- LogNCrashHttpAppender 선언 -->
+<appender name="logNCrashHttp" class="com.toast.java.logncrash.logback.LogNCrashHttpAppender">
+    <appKey value="obPARW4oq7MytePD"/>
+    <logSource value="운영"/>
+    <version value="1.0.0"/>
+    <logType value="log"/>
+    <debug value="true"/>
+    <category value="로그 서비스"/>
+    <errorCodeType value="action"/>
+</appender>
