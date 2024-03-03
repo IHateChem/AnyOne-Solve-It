@@ -3,7 +3,6 @@ package syleelsw.anyonesolveit.api.study;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
@@ -20,9 +19,9 @@ public class StudyController {
     private final StudyService studyService;
     @GetMapping("/studies")
     public ResponseEntity getStudies(@RequestParam Integer order_by, @RequestParam String term, @RequestParam Integer page,
-                                     @RequestParam LanguageTypes language, @RequestParam GoalTypes level, @RequestParam String area){
+                                     @RequestParam LanguageTypes language, @RequestParam GoalTypes level, @RequestParam Locations area,  @RequestParam String city,  @RequestParam Boolean onlineOnly, @RequestParam Boolean recruitingOnly){
 
-        return studyService.findStudy(order_by, page, language, level,  area, term);
+        return studyService.findStudy(order_by, page, language, level, area, city, onlineOnly, recruitingOnly, term);
     }
     @PostMapping("/studies")
     public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto){

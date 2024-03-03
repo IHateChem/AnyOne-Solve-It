@@ -41,12 +41,13 @@ public class Study extends BaseEntity {
     private String frequency;
     private String study_time;
     private Integer how_many;
+    private Boolean recruiting;
     @ColumnDefault("0")
-    private Long popularity;
+    private long popularity;
     @ColumnDefault("0")
-    private Integer avg_rank;
+    private int avg_rank;
     @ColumnDefault("0")
-    private Float avg_solved;
+    private float avg_solved;
 
     //@ElementCollection(fetch = FetchType.LAZY)
     @ManyToMany
@@ -55,9 +56,11 @@ public class Study extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private UserInfo user;
     @Builder
-    private Study(Long id,Integer how_many, String title, String description, String openchat, Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time) {
+    private Study(Long id,Integer how_many,Boolean recruiting,String city,  String title, String description, String openchat, Set<UserInfo> members, LanguageTypes language, GoalTypes level, Locations area,String meeting_type, String period, String frequency, String study_time) {
         this.id = id;
         this.how_many = how_many;
+        this.city = city;
+        this.recruiting = recruiting;
         this.title = title;
         this.openchat = openchat;
         this.description = description;
@@ -79,8 +82,10 @@ public class Study extends BaseEntity {
                 .description(studyDto.getDescription())
                 .openchat(studyDto.getOpenchat())
                 .language(studyDto.getLanguage())
+                .recruiting(studyDto.getRecruiting())
                 .level(studyDto.getLevel())
                 .area(studyDto.getArea())
+                .city(studyDto.getCity())
                 .meeting_type(studyDto.getMeeting_type())
                 .period(studyDto.getPeriod())
                 .members(members)

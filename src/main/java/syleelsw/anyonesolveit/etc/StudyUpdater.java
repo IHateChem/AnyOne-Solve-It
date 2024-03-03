@@ -110,7 +110,6 @@ public class StudyUpdater {
             userInfos.add(user);
             user.setModifiedDateTime(LocalDateTime.now());
         }
-        System.out.println(users.stream().map(t-> t.getSolvedProblem().stream().collect(Collectors.toList()).contains(10172)).collect(Collectors.toList()));
         userRepository.saveAll(userInfos);
     }
 

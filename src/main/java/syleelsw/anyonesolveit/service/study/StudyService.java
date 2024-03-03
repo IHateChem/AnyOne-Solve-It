@@ -116,21 +116,9 @@ public class StudyService {
     }
 
 
-    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, String locations, String term) {
-        if(term.length()>20){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
+    public ResponseEntity findStudy(Integer orderBy, Integer page, LanguageTypes language, GoalTypes level, Locations area, String city, Boolean onlineOnly, Boolean recruitingOnly, String term) {
+        if(term != null && term.length()>20){return new ResponseEntity(HttpStatus.BAD_REQUEST);}
         List<Study> studies = null;
-        String[] split = locations.split(" ");
-        String city;
-        if(split.length >2 || (split.length == 1 && !split[0].equals("ALL") || split.length==0)){
-            return getBadResponse();
-        }else if(split.length == 1){
-            city =  "ALL";
-        }else{
-            city = split[1];
-        }
-        Locations area = Locations.valueOf(split[0]);
-        log.info("Area: {}", area);
-        log.info("City: {}", city);
         try{
             StaticValidator.validateLocations(area, city);
         }catch (IllegalArgumentException e){
@@ -140,12 +128,12 @@ public class StudyService {
 
         PageRequest pageRequest = PageRequest.of((page-1)*maxPage, maxPage);
         switch (orderBy) {
-            case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, city, term, pageRequest).get();
-            case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, city, term, pageRequest).get();
-            case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, city, term, pageRequest).get();
+            case 1 -> studies = studyRepository.searchStudyDefaultOrderBy1(language, level, area, city, term, pageRequest, onlineOnly, recruitingOnly);
+            case 2 -> studies =  studyRepository.searchStudyDefaultOrderBy2(language, level, area, city, term, pageRequest, onlineOnly, recruitingOnly);
+            case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, city, term, pageRequest, onlineOnly, recruitingOnly);
             default ->  getBadResponse();
         }
-        log.info("스터디t: {}", studies);
+        log.info("스터디: {}", studies);
         return new ResponseEntity(studies.stream().map(StudyResponse::of).collect(Collectors.toList()), HttpStatus.OK);
     }
     public void updateStudy(Study study, StudyDto studyDto, Set<UserInfo> members){

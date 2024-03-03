@@ -15,14 +15,14 @@ import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 public class ParticipationResponse {
     private String participationId;
     private Long userId;
-    private String userName;
+    private String username;
     private String message;
     private ParticipationStates state;
     private String studyName;
     private Long studyId;
     public ParticipationResponse(Participation participation, Long id){
         this.participationId = participation.getId();
-        this.userName = participation.getUser().getUsername();
+        this.username = participation.getUser().getUsername();
         this.userId = id;
         this.message = participation.getMessage();
         this.state = participation.getState();
@@ -34,7 +34,7 @@ public class ParticipationResponse {
     public ParticipationResponse(String participationId, String userName, Long userId, String message, ParticipationStates state, String studyName, Long studyId) {
         this.participationId = participationId;
         this.userId = userId;
-        this.userName = userName;
+        this.username = userName;
         this.message = message;
         this.state = state;
         this.studyName = studyName;

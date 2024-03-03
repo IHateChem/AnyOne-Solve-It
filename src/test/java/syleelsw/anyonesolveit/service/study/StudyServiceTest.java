@@ -54,6 +54,8 @@ class StudyServiceTest {
                 .email("syleelsw@snu.ac.kr")
                 .isFirst(isFirst)
                 .bjname(bjName)
+                .solved(0L)
+                .rank(0)
                 .build();
     }
     private StudyDto studyBuilder(List<Long> members){
@@ -64,9 +66,23 @@ class StudyServiceTest {
                 .description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
-                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .meeting_type("온라인")
+                .frequency("1번").language(LanguageTypes.valueOf("Python"))
                 .members(members)
+                .period("1주").build();
+    }
+    private StudyDto studyBuilderMeet(List<Long> members, String meeting_type){
+        return StudyDto.builder()
+                .study_time("studyTime")
+                .area(Locations.valueOf("서울"))
+                .city("강남구")
+                .description("알고리즘 스터디")
+                .level(GoalTypes.valueOf("입문"))
+                .title("파이썬 알고리즘 스터디")
+                .meeting_type(meeting_type)
+                .frequency("1번").language(LanguageTypes.valueOf("Python"))
+                .members(members)
+                .recruiting(true)
                 .period("1주").build();
     }
     private StudyDto studyBuilder2(List<Long> members){ //설명에! 추가, level CONEPT으로 변경, freq 2번, Language JAVA
@@ -77,8 +93,9 @@ class StudyServiceTest {
                 .city("강남구")
                 .level(GoalTypes.valueOf("CONCEPT"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
-                .frequency("2번").language(LanguageTypes.valueOf("JAVA"))
+                .meeting_type("온라인")
+                .recruiting(true)
+                .frequency("2번").language(LanguageTypes.valueOf("Java"))
                 .members(members)
                 .period("1주").build();
     }
@@ -89,16 +106,61 @@ class StudyServiceTest {
                 description("알고리즘 스터디")
                 .city(city)
                 .level(level)
+                .recruiting(true)
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(language)
                 .members(members)
                 .period("1주").build();
     }
 
+    @DisplayName("onlineOnly = true면 online만 가져와야한다.")
+    @Test
+    void onLineOnlytest(){
+        //given
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
+        UserInfo user2 = mkUserInfo(true, "igy2840");
+        UserInfo savedUser2 = userRepository.save(user2);
+        List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
+        StudyDto studyDtoOn = studyBuilderMeet(members, "온라인");
+        StudyDto studyDtoOff = studyBuilderMeet(members, "오프라인");
+        StudyDto studyDtoBoth = studyBuilderMeet(members, "온·오프라인");
+
+
+        String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
+        ResponseEntity<StudyResponse> responseOn = studyService.createStudy(jwt, studyDtoOn);
+        ResponseEntity<StudyResponse> responseOff = studyService.createStudy(jwt, studyDtoOff);
+        ResponseEntity<StudyResponse> responseBoth = studyService.createStudy(jwt, studyDtoBoth);
+
+        Long studyIdOn = responseOn.getBody().getId();
+        StudyResponse studyOn = studyService.getStudy(jwt, studyIdOn).getBody();
+
+        Long studyIdOff = responseOff.getBody().getId();
+        StudyResponse studyOff = studyService.getStudy(jwt, studyIdOff).getBody();
+
+        Long studyIdBoth  = responseBoth.getBody().getId();
+        StudyResponse studyBoth = studyService.getStudy(jwt, studyIdBoth).getBody();
+
+        //when
+
+        ResponseEntity<List<StudyResponse>> onlineStudyOnly = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.서울, "강남구", true, false, null);
+        ResponseEntity<List<StudyResponse>> studyAll = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.서울, "강남구", false, false, null);
+
+        //then
+        assertThat(onlineStudyOnly.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(onlineStudyOnly.getBody()).hasSize(2);
+        assertThat(onlineStudyOnly.getBody()).extracting("meeting_type").containsExactlyInAnyOrder("온라인", "온·오프라인");
+
+
+        assertThat(studyAll.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(studyAll.getBody()).hasSize(3);
+
+    }
+
     @DisplayName("스터디 문제 제안 테스트, 잘못된 문제가 들어오면 isExist = false, whoSolved = [], 푼사람이 있으면 푼사람들 전부 들어가야함. ")
     @Test
-    void test(){
+    void 제안test(){
         //given
 
         UserInfo user1 = mkUserInfo(true, "syleelsw");
@@ -443,7 +505,7 @@ class StudyServiceTest {
                 .description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
                 .members(members)
                 .period("1주").build();
@@ -456,7 +518,7 @@ class StudyServiceTest {
                 .description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
                 .members(members)
                 .period("1주").build();
@@ -466,8 +528,8 @@ class StudyServiceTest {
         ResponseEntity<StudyResponse> wrongStudyResponse = studyService.createStudy(jwt, wrongStudyDto);
         //when
 
-        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "서울 강남구", null);
-        ResponseEntity<List<StudyResponse>> study2 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "서울 서초구", null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.서울, "강남구", false, false, null);
+        ResponseEntity<List<StudyResponse>> study2 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.서울, "강남구", false, false,null);
 
         //then
         assertThat(studyResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -560,7 +622,7 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, "ALL", false, false,null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);
@@ -584,16 +646,16 @@ class StudyServiceTest {
         UserInfo savedUser2 = userRepository.save(user2);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         List<Long> members = List.of(savedUser1.getId(), savedUser2.getId());
-        StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.PYTHON, "강남구");
-        StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA, "강남구");
-        StudyDto studyDto3 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.JAVA, "강남구");
+        StudyDto studyDto = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.Python, "강남구");
+        StudyDto studyDto2 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.Java, "강남구");
+        StudyDto studyDto3 = studyBuilder2(members, Locations.서울, GoalTypes.입문, LanguageTypes.Java, "강남구");
 
         studyService.createStudy(jwt, studyDto);
         studyService.createStudy(jwt, studyDto2);
         studyService.createStudy(jwt, studyDto3);
         //when
 
-        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.JAVA, GoalTypes.ALL, "ALL", null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 1, LanguageTypes.Java, GoalTypes.ALL, Locations.ALL, "ALL", false, false,null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(2);
@@ -609,7 +671,7 @@ class StudyServiceTest {
         UserInfo savedUser2 = userRepository.save(user2);
         String jwt = jwtTokenProvider.createJwt(savedUser1.getId(),TokenType.ACCESS);
         //when
-        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
+        ResponseEntity<List<StudyResponse>> study1 = studyService.findStudy(1, 10, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, "ALL", false, false,null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(0);
@@ -634,7 +696,7 @@ class StudyServiceTest {
         Study study = (Study) response.getBody();
         Long study_id = study.getId();
         //when
-        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, "ALL", null);
+        ResponseEntity<List<Study>> study1 = studyService.findStudy(1, 1, LanguageTypes.ALL, GoalTypes.ALL, Locations.ALL, "ALL", false, false,null);
         //then
         assertThat(study1.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(study1.getBody()).hasSize(page);
@@ -656,7 +718,7 @@ class StudyServiceTest {
                 description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
                 .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
@@ -692,7 +754,7 @@ class StudyServiceTest {
                 description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
                 .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
@@ -730,7 +792,7 @@ class StudyServiceTest {
                 description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
+                .meeting_type("온라인")
                 .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
                 .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
@@ -782,8 +844,8 @@ class StudyServiceTest {
                 description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
-                .frequency("1번").language(LanguageTypes.PYTHON)
+                .meeting_type("온라인")
+                .frequency("1번").language(LanguageTypes.Python)
                 .members(List.of(savedUser2.getId(), savedUser.getId()))
                 .period("1주").build();
 
