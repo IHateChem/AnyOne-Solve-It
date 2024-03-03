@@ -61,10 +61,10 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.8.0'
 
     //log in NHN
-    implementation group: 'org.json', name: 'json', version: '20240205'
-    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5'
-    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
-    implementation files("libs/toast-logncrash-logback-sdk-3.0.5.jar")
+    // implementation group: 'org.json', name: 'json', version: '20240205'
+    // implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5'
+    // testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
+    // implementation files("libs/toast-logncrash-logback-sdk-3.0.5.jar")
 }
 
 tasks.named('test') {
