@@ -43,13 +43,14 @@ public class UserInfo extends BaseEntity {
     private boolean isFirst;
 
     @ColumnDefault("0")
-    private Long solved;
+    private long solved;
 
 
     @Builder
-    private UserInfo(Long id,String name,  String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
+    private UserInfo(Long id,String name,  String city, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
         this.id = id;
         this.name = name;
+        this.city = city;
         this.picture = picture;
         this.username = username;
         this.email = email;
@@ -71,7 +72,7 @@ public class UserInfo extends BaseEntity {
         this.bjname = userProfile.getBjname();
         this.prefer_type = userProfile.getPrefer_type();
         this.area = userProfile.getArea();
-        this.languages = userProfile.getLanguages();
+        this.languages = new ArrayList<>(userProfile.getLanguages());
         this.isFirst = false;
         this.solved = (long) getSolvedProblem().size();
 

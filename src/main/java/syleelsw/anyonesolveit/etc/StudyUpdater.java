@@ -78,7 +78,7 @@ public class StudyUpdater {
             String user_level_problem = restTemplate.getForEntity(solved_dac_url + "/user/problem_stats?handle=" + username, String.class).getBody();
             ResponseEntity<SolvedacUserInfoDto> bjUserInfo = restTemplate.getForEntity(solved_dac_url + "/user/show?handle=" + username, SolvedacUserInfoDto.class);
             Long solvedCount = bjUserInfo.getBody().getSolvedCount();
-            if(user.getSolved().equals(solvedCount)){continue;}
+            if(user.getSolved()==(solvedCount)){continue;}
             user.setRank(bjUserInfo.getBody().getRank());
             user.setSolved(solvedCount);
             Set<Integer> problemSet = new HashSet<>();
@@ -110,7 +110,6 @@ public class StudyUpdater {
             userInfos.add(user);
             user.setModifiedDateTime(LocalDateTime.now());
         }
-        System.out.println(users.stream().map(t-> t.getSolvedProblem().stream().collect(Collectors.toList()).contains(10172)).collect(Collectors.toList()));
         userRepository.saveAll(userInfos);
     }
 

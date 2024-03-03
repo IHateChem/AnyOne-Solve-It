@@ -44,14 +44,16 @@ class UserServiceTest {
                 .area(Locations.ALL)
                 .email("s@a.com")
                 .isFirst(true)
-                .languages(List.of(LanguageTypes.JAVA))
-                .prefer_type("대면")
+                .languages(List.of(LanguageTypes.Java))
+                .prefer_type("온라인")
                 .build();
     }
     public UserInfo mkUserInfo(Boolean isFirst, String bjName){
         return UserInfo.builder()
                 .email("syleelsw@snu.ac.kr")
                 .isFirst(isFirst)
+                .solved(0L)
+                .rank(0)
                 .bjname(bjName)
                 .provider(Provider.test)
                 .build();
@@ -59,6 +61,8 @@ class UserServiceTest {
     public UserInfo mkUserInfo2(Boolean isFirst, String email, String bjName){
         return UserInfo.builder()
                 .email(email)
+                .rank(0)
+                .solved(0L)
                 .username(email)
                 .isFirst(isFirst)
                 .bjname(bjName)
@@ -74,9 +78,10 @@ class UserServiceTest {
                 .description("알고리즘 스터디")
                 .level(GoalTypes.valueOf("입문"))
                 .title("파이썬 알고리즘 스터디")
-                .meeting_type("대면")
-                .frequency("1번").language(LanguageTypes.valueOf("PYTHON"))
+                .meeting_type("온라인")
+                .frequency("1번").language(LanguageTypes.valueOf("Python"))
                 .members(members)
+                .recruiting(true)
                 .period("1주").build();
     }
     @DisplayName("유저검색 테스트")
@@ -178,7 +183,7 @@ class UserServiceTest {
     void setProfileTest(){
         String jwt = provider.createJwt(1L, TokenType.ACCESS);
         //given
-        UserProfileDto inValidUser =userProfileDto("syleelsw123");
+        UserProfileDto inValidUser = userProfileDto("syleelsw123");
         UserProfileDto validUser = userProfileDto("syleelsw");
         //when
 

@@ -17,14 +17,16 @@ public class UserProfileDto {
     private String bjname;
     private String prefer_type;
     private Locations area;
+    private String city;
     private List<LanguageTypes> languages;
     private boolean isFirst;
     @Builder
-    private UserProfileDto(Long id, String username, String email, String bjname, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst) {
+    private UserProfileDto(Long id, String username,String city, String email, String bjname, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.bjname = bjname;
+        this.city = city;
         this.prefer_type = prefer_type;
         this.area = area;
         this.languages = languages;
@@ -42,6 +44,8 @@ public class UserProfileDto {
                 .id(userInfo.getId())
                 .username(userInfo.getUsername())
                 .email(userInfo.getEmail())
+                .area(userInfo.getArea())
+                .city(userInfo.getCity())
                 .bjname(userInfo.getBjname())
                 .prefer_type(userInfo.getPrefer_type())
                 .languages(userInfo.getLanguages())
@@ -56,6 +60,8 @@ public class UserProfileDto {
                 .bjname(this.bjname)
                 .rank(rank)
                 .prefer_type(this.prefer_type)
+                .area(this.area)
+                .city(this.city)
                 .languages(this.languages)
                 .isFirst(this.isFirst)
                 .solvedProblem(solvedProblem.getSolvedProblems())

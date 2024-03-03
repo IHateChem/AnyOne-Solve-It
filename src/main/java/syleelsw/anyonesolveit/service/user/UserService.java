@@ -54,11 +54,15 @@ public class UserService {
     }
 
     public ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
-        RankAndSolvedProblem rankAndProblems = getRankAndSolveProblem(user.getBjname());
-        Integer rank = rankAndProblems.rank;
-        SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
-        user.update(rank, solvedProblem, userProfile);
-        userRepository.save(user);
+        try{
+            RankAndSolvedProblem rankAndProblems = getRankAndSolveProblem(userProfile.getBjname());
+            Integer rank = rankAndProblems.rank;
+            SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
+            user.update(rank, solvedProblem, userProfile);
+            userRepository.save(user);
+        }catch (IllegalStateException e){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
         return new ResponseEntity(HttpStatus.OK);
     }
 
