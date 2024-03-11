@@ -18,7 +18,7 @@ import java.util.List;
 public class BaekjoonController {
     private final ValidationService validationService;
     @GetMapping("/validate/baekjoon")
-    public ResponseEntity validateBaekjoonIds(@RequestParam String id) {
+    public ResponseEntity validateBaekjoonIds(@RequestHeader String Access, @RequestParam String id) {
         return validationService.validateBaekjoonIds(id);
     }
 

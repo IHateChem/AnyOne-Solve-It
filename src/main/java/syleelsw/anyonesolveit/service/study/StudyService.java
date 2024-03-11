@@ -338,7 +338,10 @@ public class StudyService {
         UserInfo user = userRepository.findById(userId).get();
 
         List<Study> managedStudies = studyRepository.findAllByUser(user);
-        List<Study> participatedStudies = studyRepository.findStudiesByMember(user);
+        List<Study> participatedStudies = studyRepository.findStudiesByMember(user)
+                .stream().filter(
+                        participation -> !participation.getUser().getId().equals(userId)
+                ).toList();
         return new ResponseEntity(Map.of("managements", getStudyResponse(managedStudies), "participations", getStudyResponse(participatedStudies)), HttpStatus.OK);
     }
 
@@ -351,7 +354,6 @@ public class StudyService {
     }
 
     private static List<StudyResponse> getStudyResponse(List<Study> studies) {
-        studies.forEach( t-> log.info("hihi {}", t.getUser()));
         return studies.stream().map(StudyResponse::of).collect(Collectors.toList());
     }
 
