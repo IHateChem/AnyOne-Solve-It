@@ -238,6 +238,6 @@ public class UserService {
         String username = user.getUsername();
         String picture = user.getPicture();
         String email = user.getEmail();
-        new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);
     }
 }
