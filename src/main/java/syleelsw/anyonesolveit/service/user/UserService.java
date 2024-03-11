@@ -231,4 +231,13 @@ public class UserService {
         List<String> userInfos = userRepository.searchByEmail(userId);
         return new ResponseEntity(Map.of("results", userInfos), HttpStatus.OK);
     }
+
+    public ResponseEntity getInformation(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        String username = user.getUsername();
+        String picture = user.getPicture();
+        String email = user.getEmail();
+        new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);
+    }
 }

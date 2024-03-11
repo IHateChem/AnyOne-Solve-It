@@ -58,6 +58,11 @@ public class UserController {
         return userService.getNotices(Access);
     }
 
+    @GetMapping("/information")
+    public ResponseEntity getInformation(@RequestHeader String Access){
+        return userService.getInformation(Access);
+    }
+
     @DeleteMapping("/notices/{id}")
     public ResponseEntity delNotices(@RequestHeader String Access,@PathVariable Long id){
         return userService.delNotices(Access, id);
