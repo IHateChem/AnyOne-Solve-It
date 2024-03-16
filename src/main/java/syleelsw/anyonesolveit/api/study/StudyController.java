@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import syleelsw.anyonesolveit.api.study.dto.ChangeMangerRequest;
 import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.etc.GoalTypes;
@@ -60,9 +61,9 @@ public class StudyController {
     public ResponseEntity deleteStudyProblem(@RequestHeader String Access, @PathVariable Long id, @PathVariable Integer problem){
         return studyService.deleteStudyProblem(Access, id, problem);
     }
-    @PutMapping("/studies/{id}/manager")
-    public ResponseEntity changeManger(@RequestHeader String Access, @PathVariable Long id, @RequestParam Long userId){
-        return studyService.changeManger(Access, id, userId);
+    @PatchMapping("/studies/{id}/manager")
+    public ResponseEntity changeManger(@RequestHeader String Access, @PathVariable Long id, @RequestBody ChangeMangerRequest changeMangerRequest){
+        return studyService.changeManger(Access, id, changeMangerRequest.getUserId());
     }
     @PostMapping("/studies/{id}/out")
     public ResponseEntity studyOut(@RequestHeader String Access, @PathVariable Long id){
