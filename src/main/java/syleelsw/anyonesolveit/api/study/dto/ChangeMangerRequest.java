@@ -6,7 +6,6 @@ import lombok.*;
 @Setter
 @ToString
 @NoArgsConstructor
-@RequiredArgsConstructor
 public class ChangeMangerRequest {
     private Long userId;
 }
