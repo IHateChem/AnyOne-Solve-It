@@ -6,6 +6,8 @@ import lombok.Setter;
 import lombok.ToString;
 import syleelsw.anyonesolveit.domain.study.Notice;
 
+import java.time.LocalDateTime;
+
 @Getter @Setter @ToString
 public class NoticeDto {
     private Long id;
@@ -14,10 +16,12 @@ public class NoticeDto {
     private String title;
     private String username;
     private Long userId;
+    private LocalDateTime noticeTime;
     @Builder
-    public NoticeDto(Long id, Integer noticeType, Long studyId, String title, String username, Long userId) {
+    public NoticeDto(Long id, LocalDateTime noticeTime, Integer noticeType, Long studyId, String title, String username, Long userId) {
         this.id = id;
         this.noticeType = noticeType;
+        this.noticeTime = noticeTime;
         this.studyId = studyId;
         this.title = title;
         this.username = username;
@@ -30,8 +34,9 @@ public class NoticeDto {
                 .noticeType(notice.getNoticeType())
                 .studyId(notice.getStudy().getId())
                 .title(notice.getStudy().getTitle())
-                .username(notice.getUser() ==null ? null : notice.getUser().getUsername())
-                .userId(notice.getUser() ==null ? null : notice.getUser().getId())
+                .username(notice.getUser() == null ? null : notice.getUser().getUsername())
+                .userId(notice.getUser() == null ? null : notice.getUser().getId())
+                .noticeTime(notice.getModifiedDateTime())
                 .build();
     }
 }

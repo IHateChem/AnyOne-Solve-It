@@ -133,6 +133,8 @@ public class LoginService {
                 .isFirst(true)
                 .picture(picture)
                 .provider(provider)
+                .solved(0l)
+                .rank(0)
                 .build();
         return userRepository.save(userInfo);
     }

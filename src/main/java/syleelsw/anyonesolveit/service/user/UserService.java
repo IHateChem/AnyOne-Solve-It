@@ -15,7 +15,10 @@ import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
 import syleelsw.anyonesolveit.domain.study.Notice;
 import syleelsw.anyonesolveit.domain.study.Participation;
+import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
@@ -35,6 +38,8 @@ public class UserService {
     private final ValidationService validationService;
     private final ParticipationRepository participationRepository;
     private final BaekjoonInformationRepository baekjoonInformationRepository;
+    private final StudyRepository studyRepository;
+    private final NoticeRepository noticeRepository;
     private final NoticeService noticeService;
     private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
@@ -216,6 +221,17 @@ public class UserService {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         return noticeService.getNoticesByUser(user);
+    }
+
+
+
+    public ResponseEntity<NoticeResponse> mkTestNotices(String access) {
+        Long userId = tokenProvider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        Study studyOptional = studyRepository.findAllByUser(user).get(0);
+        Notice notice = Notice.builder().user(user).toUser(user).noticeType(5).study(studyOptional).build();
+        noticeRepository.save(notice);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     public ResponseEntity delNotices(String access, Long id) {

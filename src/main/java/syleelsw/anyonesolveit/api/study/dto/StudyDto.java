@@ -31,7 +31,7 @@ public class StudyDto {
     private String period;
     private String frequency;
     private Integer how_many;
-    private Boolean recruiting;
+    private Boolean recruiting = true;
     @Size(max=50)
     private String study_time;
     @Size(max=30)
