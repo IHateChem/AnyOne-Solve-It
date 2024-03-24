@@ -43,7 +43,7 @@ public class UserInfo extends BaseEntity {
     private boolean isFirst;
 
     @ColumnDefault("0")
-    private long solved;
+    private long solved =0l;
 
 
     @Builder
