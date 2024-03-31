@@ -20,20 +20,20 @@ public class MyPageResponse {
     private String prefer_type;
     private Locations area;
     private String city;
-    private List<LanguageTypes> languages;
+    private LanguageTypes language;
     private Integer suggestions;
     private Integer changedParticipations;
 
 
     @Builder
-    public MyPageResponse(String username, String bjname, Integer rank, String prefer_type, Locations area,String city, List<LanguageTypes> languages, Integer suggestions, Integer changedParticipations) {
+    public MyPageResponse(String username, String bjname, Integer rank, String prefer_type, Locations area,String city, LanguageTypes language, Integer suggestions, Integer changedParticipations) {
         this.username = username;
         this.bjname = bjname;
         this.rank = rank;
         this.city = city;
         this.prefer_type = prefer_type;
         this.area = area;
-        this.languages = languages;
+        this.language = language;
         this.suggestions = suggestions;
         this.changedParticipations = changedParticipations;
     }
@@ -45,7 +45,7 @@ public class MyPageResponse {
             .username(userInfo.getUsername())
             .bjname(userInfo.getBjname())
             .rank(userInfo.getRank())
-            .languages(userInfo.getLanguages())
+            .language(userInfo.getLanguage())
             .prefer_type(userInfo.getPrefer_type())
             .area(userInfo.getArea())
             .city(userInfo.getCity())

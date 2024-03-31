@@ -33,8 +33,8 @@ public class UserInfo extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Provider provider;
     private String city;
-    @ElementCollection(fetch = FetchType.LAZY) @Enumerated(EnumType.STRING)
-    private List<LanguageTypes> languages;
+    @Enumerated(EnumType.STRING)
+    private LanguageTypes language;
     @ElementCollection(fetch = FetchType.LAZY)
     private List<Integer> solvedProblem;
     @Column(columnDefinition="TEXT")
@@ -47,7 +47,7 @@ public class UserInfo extends BaseEntity {
 
 
     @Builder
-    private UserInfo(Long id,String name,  String city, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, List<LanguageTypes> languages, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
+    private UserInfo(Long id,String name,  String city, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, LanguageTypes language, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
         this.id = id;
         this.name = name;
         this.city = city;
@@ -59,7 +59,7 @@ public class UserInfo extends BaseEntity {
         this.rank = rank;
         this.prefer_type = prefer_type;
         this.area = area;
-        this.languages = languages;
+        this.language = language;
         this.isFirst = isFirst;
         this.solvedProblem = solvedProblem;
         this.solveProblemLevel = solveProblemLevel;
@@ -72,7 +72,7 @@ public class UserInfo extends BaseEntity {
         this.bjname = userProfile.getBjname();
         this.prefer_type = userProfile.getPrefer_type();
         this.area = userProfile.getArea();
-        this.languages = new ArrayList<>(userProfile.getLanguages());
+        this.language = userProfile.getLanguage();
         this.isFirst = false;
         this.solved = (long) getSolvedProblem().size();
 

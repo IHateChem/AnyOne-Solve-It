@@ -209,7 +209,7 @@ public class UserService {
         user.setArea(Locations.valueOf(split[0]));
         user.setCity(split[1]);
         user.setBjname(myPage.getBjname());
-        user.setLanguages(myPage.getLanguages());
+        user.setLanguage(myPage.getLanguage());
         user.setPrefer_type(myPage.getPrefer_type());
 
         BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(myPage.getBjname()).get();
