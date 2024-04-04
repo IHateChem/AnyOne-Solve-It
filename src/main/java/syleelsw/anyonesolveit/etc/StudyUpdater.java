@@ -3,9 +3,11 @@ package syleelsw.anyonesolveit.etc;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.collections.SynchronizedStack;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -20,10 +22,7 @@ import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.service.user.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -31,8 +30,8 @@ import java.util.stream.Collectors;
 public class StudyUpdater {
     private final StudyRepository studyRepository;
     private final UserRepository userRepository;
-    private static final int THREAD_POOL_SIZE = 5; // Adjust the pool size as needed
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    @Qualifier("threadPoolTaskExecutor")
+    private final Executor executor;
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void run() {
@@ -65,12 +64,34 @@ public class StudyUpdater {
             return set;
         };
     }
+    class Job implements Runnable{
+        String url;
+        Set set;
+        public Job(String url, Set set){
+            this.url = url;
+            this.set = set;
+        }
+        @Override
+        public void run() {
+            RestTemplate restTemplate = new RestTemplate();
+            try{
+                ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+                for (SolvedacPageItem item : response.getBody().getItems()) {
+                    set.add(item.getProblemId());
+                }
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
+    }
 
     @Async @Transactional
     public void updateUser(List<UserInfo> users) {
         String solved_dac_url = "https://solved.ac/api/v3";
         CopyOnWriteArrayList<UserInfo> userInfos = new CopyOnWriteArrayList<>();
-
+        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
         for (UserInfo user : users) {
             if(user.getModifiedDateTime().isAfter(LocalDateTime.now().minusHours(1))) continue;
             String username = user.getBjname();
@@ -81,25 +102,13 @@ public class StudyUpdater {
             if(user.getSolved()==(solvedCount)){continue;}
             user.setRank(bjUserInfo.getBody().getRank());
             user.setSolved(solvedCount);
-            Set<Integer> problemSet = new HashSet<>();
             int pageCount = (int) (solvedCount / 50) + 1;
 
-            List<Future<Set<Integer>>> futures = new ArrayList<>();
 
             for (int i = 0; i < pageCount; i++) {
                 String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
-                Callable<Set<Integer>> task = createTask(url);
-                Future<Set<Integer>> future = executorService.submit(task);
-                futures.add(future);
-            }
-
-            for (Future<Set<Integer>> future : futures) {
-                try {
-                    problemSet.addAll(future.get());
-                } catch (InterruptedException | ExecutionException e) {
-                    // Handle exceptions as needed
-                    e.printStackTrace();
-                }
+                Job task = new Job(url, problemSet);
+                executor.execute(task);
             }
 
             SolvedProblemDto solvedProblemDto = SolvedProblemDto.builder()

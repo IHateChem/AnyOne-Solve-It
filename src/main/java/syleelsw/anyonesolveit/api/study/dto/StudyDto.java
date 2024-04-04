@@ -1,5 +1,6 @@
 package syleelsw.anyonesolveit.api.study.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.FetchType;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,7 @@ public class StudyDto {
     private String title;
     @Size(max= 40) //maxDescription
     private String description;
+    @JsonProperty("main_language")
     private LanguageTypes language;
     private GoalTypes level;
     private Locations area;
