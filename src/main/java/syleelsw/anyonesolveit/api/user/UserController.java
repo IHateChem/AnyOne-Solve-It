@@ -58,6 +58,12 @@ public class UserController {
         return userService.getNotices(Access);
     }
 
+
+    @PostMapping("/notices/test")
+    public ResponseEntity mkTestNotices(@RequestHeader String Access){
+        return userService.mkTestNotices(Access);
+    }
+
     @GetMapping("/information")
     public ResponseEntity getInformation(@RequestHeader String Access){
         return userService.getInformation(Access);
