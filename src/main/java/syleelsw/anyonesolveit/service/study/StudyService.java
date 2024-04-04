@@ -69,6 +69,8 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Set<UserInfo> members;
+        log.info("{} studyDto is.. .", studyDto);
+
 
         try{
             //잘못된 유저가 있는지 체크
@@ -86,6 +88,9 @@ public class StudyService {
 
         Study study = Study.of(studyDto, members);
         study.setUser(user);
+        Set<UserInfo> memberSet = study.getMembers();
+        memberSet.add(user);
+        study.setMembers(memberSet);
         //스터디 평균 랭크, 푼 문제수 등 계산
         problemSolvedCountUpdater.update(study);
         study = studyRepository.save(study);
