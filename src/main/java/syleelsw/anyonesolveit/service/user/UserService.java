@@ -42,7 +42,7 @@ public class UserService {
     private final StudyRepository studyRepository;
     private final NoticeRepository noticeRepository;
     private final NoticeService noticeService;
-    @Qualifier("threadPoolTaskExecutor")
+    @Qualifier("taskExecutor")
     private final Executor executor;
 
 
