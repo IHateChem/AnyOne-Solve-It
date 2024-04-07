@@ -46,7 +46,7 @@ public class ControllerAdvice {
         }
     }
 
-    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, ..)")
+    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, ..) && !@annotation(IgnoreValidation )")
     public ResponseEntity jwtValidation(ProceedingJoinPoint joinPoint, String Access) throws Throwable {
         if (jwtTokenProvider.validateToken(Access) && isLoginUser(jwtTokenProvider.getUserId(Access))) {
             return (ResponseEntity) joinPoint.proceed();

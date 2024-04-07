@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import syleelsw.anyonesolveit.aops.IgnoreValidation;
 import syleelsw.anyonesolveit.api.study.dto.ChangeMangerRequest;
 import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
@@ -24,7 +25,7 @@ public class StudyController {
 
         return studyService.findStudy(order_by, page, language, level, area, city, onlineOnly, recruitingOnly, term);
     }
-    @PostMapping("/studies")
+    @PostMapping("/studies") @IgnoreValidation()
     public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto){
         return studyService.createStudy(Access, studyDto);
     }
