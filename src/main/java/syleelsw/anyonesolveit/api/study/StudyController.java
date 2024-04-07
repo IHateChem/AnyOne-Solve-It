@@ -1,5 +1,6 @@
 package syleelsw.anyonesolveit.api.study;
 
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class StudyController {
         return studyService.createStudy(Access, studyDto);
     }
     @GetMapping("/studies/{id}") @IgnoreValidation()
-    public ResponseEntity getStudy(@RequestHeader String Access, @PathVariable Long id){
+    public ResponseEntity getStudy(@RequestHeader(required = false) String Access, @PathVariable Long id){
         return studyService.getStudy(Access, id);
     }
 
