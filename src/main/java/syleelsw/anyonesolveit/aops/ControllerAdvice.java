@@ -42,7 +42,7 @@ public class ControllerAdvice {
         if(jwtTokenProvider.validateToken(jwt)){
             return joinPoint.proceed();
         }else{
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
