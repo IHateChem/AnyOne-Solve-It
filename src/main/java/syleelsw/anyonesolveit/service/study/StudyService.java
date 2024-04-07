@@ -106,12 +106,16 @@ public class StudyService {
     }
     @Transactional
     public ResponseEntity<StudyResponse> getStudy(String access, Long id) {
-        Long userId = jwtTokenProvider.getUserId(access);
-        UserInfo user = userRepository.findById(userId).get();
         Study study = studyRepository.findById(id).get();
         study.setPopularity(study.getPopularity()+1);
         studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
-        return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
+        if(access != null) {
+            Long userId = jwtTokenProvider.getUserId(access);
+            UserInfo user = userRepository.findById(userId).get();
+            return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(StudyResponse.of(study), HttpStatus.OK);
+        }
     }
     private List listSplitter(List t,int page){
         if(t.size() > (page-1)*maxPage){

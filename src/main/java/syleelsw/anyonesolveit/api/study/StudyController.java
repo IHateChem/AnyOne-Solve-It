@@ -25,11 +25,11 @@ public class StudyController {
 
         return studyService.findStudy(order_by, page, language, level, area, city, onlineOnly, recruitingOnly, term);
     }
-    @PostMapping("/studies") @IgnoreValidation()
+    @PostMapping("/studies")
     public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto){
         return studyService.createStudy(Access, studyDto);
     }
-    @GetMapping("/studies/{id}")
+    @GetMapping("/studies/{id}") @IgnoreValidation()
     public ResponseEntity getStudy(@RequestHeader String Access, @PathVariable Long id){
         return studyService.getStudy(Access, id);
     }
