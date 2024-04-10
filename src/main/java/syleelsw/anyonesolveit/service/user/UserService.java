@@ -45,6 +45,15 @@ public class UserService {
     @Qualifier("taskExecutor")
     private final Executor executor;
 
+    public ResponseEntity searchUserByBjId(String bjId) {
+        Optional<Long> idByBjName = userRepository.findIdByBjName(bjId);
+        if(idByBjName.isEmpty()) {
+            return null; // 빈값 처리.
+        }else{
+            return new ResponseEntity( Map.of("userId", idByBjName.get()) , HttpStatus.OK);
+        }
+    }
+
 
     class Job implements Runnable{
         String url;

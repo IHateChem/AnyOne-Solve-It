@@ -78,4 +78,8 @@ public class UserController {
     public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String userId){
         return userService.searchUser(userId);
     }
+    @GetMapping("/api/user/search/userId")
+    public ResponseEntity searchUserIdByBjId(@RequestHeader String Access, @RequestParam String bjId){
+        return userService.searchUserByBjId(bjId);
+    }
 }
