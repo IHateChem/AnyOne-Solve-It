@@ -48,7 +48,7 @@ public class UserService {
     public ResponseEntity searchUserByBjId(String bjId) {
         Optional<Long> idByBjName = userRepository.findIdByBjName(bjId);
         if(idByBjName.isEmpty()) {
-            return null; // 빈값 처리.
+            return new ResponseEntity( Map.of("userId", -1) , HttpStatus.OK);
         }else{
             return new ResponseEntity( Map.of("userId", idByBjName.get()) , HttpStatus.OK);
         }
