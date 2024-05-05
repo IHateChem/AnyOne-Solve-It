@@ -139,11 +139,6 @@ public class UserService {
             Job task = new Job(url, problemSet);
             executor.execute(task);
         }
-        try {
-            executor.wait();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         log.info("problemSet: {}", problemSet.size());
         return SolvedProblemDto.builder()
                 .solvedProblems(problemSet.stream().toList())

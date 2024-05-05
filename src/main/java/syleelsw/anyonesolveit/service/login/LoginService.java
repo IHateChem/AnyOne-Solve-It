@@ -13,6 +13,8 @@ import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
+import syleelsw.anyonesolveit.domain.study.Notice;
+import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
@@ -38,6 +40,7 @@ public class LoginService {
     private final RefreshRedisRepository refreshRedisRepository;
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
+    private final NoticeRepository noticeRepository;
     private final StudyRepository studyRepository;
     private final UserService userService;
 
@@ -264,6 +267,13 @@ public class LoginService {
                 studyRepository.save(study);
             }
         });
+        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
+        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
+            allByToUserOrderByModifiedDateTimeDesc.get().stream()
+                    .forEach(n -> {
+                        noticeRepository.delete(n);
+                    });
+        }
         userRepository.delete(user);
         return new ResponseEntity(HttpStatus.OK);
     }
