@@ -315,6 +315,7 @@ public class StudyService {
 
     @Transactional
     public ResponseEntity confirmParticipation(String access, String participationId, Boolean confirm) {
+        log.info("participationId: {}", participationId);
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
 
