@@ -49,7 +49,6 @@ public class MyPageResponse {
             .prefer_type(userInfo.getPrefer_type())
             .area(userInfo.getArea())
             .city(userInfo.getCity())
-            .city(userInfo.getCity())
             .build();
     }
 }
