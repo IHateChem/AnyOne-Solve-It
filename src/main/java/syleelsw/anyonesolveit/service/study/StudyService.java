@@ -380,6 +380,10 @@ public class StudyService {
         if(!study.getMembers().contains(user)) return getBadResponse();
 
         if(study.getUser().equals(user)){
+            // 스터디원이 한명밖에 없는경우
+            if(study.getUser() == user) {
+                studyRepository.delete(study);
+            }
             return getGoodResponse(Map.of("isManager", true));
         }
 
