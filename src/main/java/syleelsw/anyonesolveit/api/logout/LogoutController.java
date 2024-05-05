@@ -18,4 +18,8 @@ public class LogoutController {
     public ResponseEntity logout(@RequestHeader String Access){
         return loginService.logout(Access);
     }
+    @GetMapping("/withdraw")
+    public ResponseEntity withdraw(@RequestHeader String Access){
+        return loginService.withdraw(Access);
+    }
 }

@@ -131,15 +131,18 @@ public class UserService {
         Long solvedCount = bjUserInfo.getBody().getSolvedCount();
         log.info("SolvedProblem: {}", solvedCount);
 
-        Set<Integer> problemSet = Collections.synchronizedSet( new HashSet<>());
+        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
         int pageCount = (int) (solvedCount / 50) + 1;
-
-        List<Future<Set<Integer>>> futures = new ArrayList<>();
 
         for (int i = 0; i < pageCount; i++) {
             String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
             Job task = new Job(url, problemSet);
             executor.execute(task);
+        }
+        try {
+            executor.wait();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         log.info("problemSet: {}", problemSet.size());
         return SolvedProblemDto.builder()

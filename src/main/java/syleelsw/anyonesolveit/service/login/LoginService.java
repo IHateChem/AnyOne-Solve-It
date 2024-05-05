@@ -13,6 +13,8 @@ import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
@@ -27,10 +29,7 @@ import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service @RequiredArgsConstructor @Slf4j
 public class LoginService {
@@ -39,6 +38,7 @@ public class LoginService {
     private final RefreshRedisRepository refreshRedisRepository;
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
+    private final StudyRepository studyRepository;
     private final UserService userService;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
@@ -106,6 +106,7 @@ public class LoginService {
         GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
+        log.info("usernaem: {}", username);
         String picture = googleInfoResponse.getPicture();
         return findUserAndJoin(email, username, authProvider, picture);
     }
@@ -241,5 +242,29 @@ public class LoginService {
         String picture = (String) githubInfo.getAvatar_url();
         if(email.equals(null)) return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         return findUserAndJoin(email, username, Provider.GITHUB, picture);
+    }
+
+    public ResponseEntity withdraw(String access) {
+        Long userId = provider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        List<Study> studiesByMember = studyRepository.findStudiesByMember(user);
+        boolean flag = false;
+        // 멤버가 1명인 스터디이거나, 본인이 관리자가 아닌 것들만 남아있어야 한다.
+        if(studiesByMember.stream().filter(study -> study.getMembers().size() == 1 || study.getUser() != user).toArray().length
+            != studiesByMember.size()){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        //탈퇴처리를 한다.
+        studiesByMember.stream().forEach( study ->{
+            if(study.getMembers().size() == 1){
+                studyRepository.delete(study);
+            }else{
+                study.getMembers().remove(user);
+                studyRepository.save(study);
+            }
+        });
+        userRepository.delete(user);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }
