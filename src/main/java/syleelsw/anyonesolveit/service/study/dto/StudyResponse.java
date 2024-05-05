@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.etc.GoalTypes;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @Getter
 @NoArgsConstructor
 @ToString
+@Slf4j
 public class StudyResponse{
     private Long id;
     private String title;
@@ -83,6 +85,7 @@ public class StudyResponse{
     }
 
     public static StudyResponse of(Study study, UserInfo userInfo){
+        log.info("{}", study.getMembers().stream().map(UserInfo::getSolved).collect(Collectors.toList()));
         return builder()
                 .id(study.getId())
                 .title(study.getTitle())
