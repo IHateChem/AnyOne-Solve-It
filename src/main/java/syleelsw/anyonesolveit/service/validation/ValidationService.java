@@ -100,6 +100,7 @@ public class ValidationService {
 
     public void isValidParticipationRequest(String participationId, UserInfo user) throws IllegalAccessException {
         Optional<Participation> byId = participationRepository.findById(participationId);
+        log.info("byId: {}", byId.get());
         if(! (byId.isPresent() && byId.get().getStudy().getUser().equals(user)
                 && byId.get().getState().equals(ParticipationStates.대기중))){
             // 아이디가 존재하지 않거나,참가 승인할 사람이 권한이 없거나.  참가신청 상태가 대기중이아니거나
