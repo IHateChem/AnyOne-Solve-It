@@ -325,10 +325,13 @@ public class StudyService {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         Participation participation = participationRepository.findById(participationId).get();
-        Long studyId = participation.getStudy().getId();
-        Study study = studyRepository.findById(studyId).get();
-        study.getMembers().add(participation.getUser());
-        studyRepository.save(study);
+
+        if(confirm){
+            Long studyId = participation.getStudy().getId();
+            Study study = studyRepository.findById(studyId).get();
+            study.getMembers().add(participation.getUser());
+            studyRepository.save(study);
+        }
 
         ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
         participation.setState(state);
