@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static syleelsw.anyonesolveit.etc.StaticValidator.isValidArea;
+
 @Service @RequiredArgsConstructor @Slf4j
 public class UserService {
     private final JwtTokenProvider tokenProvider;
@@ -93,6 +95,9 @@ public class UserService {
     public ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
         try{
             RankAndSolvedProblem rankAndProblems = getRankAndSolveProblem(userProfile.getBjname());
+            if(!isValidArea(userProfile.getArea().toString() + " " + userProfile.getCity())){
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
             Integer rank = rankAndProblems.rank;
             SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
             user.update(rank, solvedProblem, userProfile);
@@ -186,6 +191,9 @@ public class UserService {
         if(!validationService.isValidateBJId(myPage.getBjname())){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+        if(!isValidArea(myPage.getArea()+ " "+myPage.getCity())){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
         user.setFirst(false);
         setUserInformation(user, myPage);
         log.info("user: {}", user);
@@ -199,6 +207,9 @@ public class UserService {
         if(!validationService.isValidateBJId(bjname)){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+        if(!isValidArea(myPage.getArea()+ " "+myPage.getCity())){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
 
         //update bjInfo
         ResponseEntity<SolvedacUserInfoDto> response = validationService.getSolvedacUserInfoDtoResponseEntity(bjname);
@@ -210,9 +221,11 @@ public class UserService {
     }
 
     private void setUserInformation(UserInfo user, MyPageDto myPage) {
-        String[] split = myPage.getArea().split(" ");
-        user.setArea(Locations.valueOf(split[0]));
-        user.setCity(split[1]);
+        //String[] split = myPage.getArea().split(" ");
+        //user.setArea(Locations.valueOf(split[0]));
+        // user.setCity(split[1]);
+        user.setArea(Locations.valueOf(myPage.getArea()));
+        user.setCity(myPage.getCity());
         user.setBjname(myPage.getBjname());
         user.setLanguage(myPage.getLanguage());
         user.setPrefer_type(myPage.getPrefer_type());
