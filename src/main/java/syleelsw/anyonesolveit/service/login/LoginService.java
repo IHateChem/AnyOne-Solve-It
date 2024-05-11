@@ -247,11 +247,11 @@ public class LoginService {
         return findUserAndJoin(email, username, Provider.GITHUB, picture);
     }
 
+    @Transactional
     public ResponseEntity withdraw(String access) {
         Long userId = provider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         List<Study> studiesByMember = studyRepository.findStudiesByMember(user);
-        boolean flag = false;
         // 멤버가 1명인 스터디이거나, 본인이 관리자가 아닌 것들만 남아있어야 한다.
         if(studiesByMember.stream().filter(study -> study.getMembers().size() == 1 || study.getUser() != user).toArray().length
             != studiesByMember.size()){
@@ -277,4 +277,6 @@ public class LoginService {
         userRepository.delete(user);
         return new ResponseEntity(HttpStatus.OK);
     }
+
+
 }

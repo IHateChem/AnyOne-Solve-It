@@ -12,11 +12,13 @@ import java.util.List;
 public class StudyResponseMember {
     private Long id;
     private String username;
+    private int rank;
     //private List<Integer> problems;
 
     public StudyResponseMember(UserInfo user){
         this.id = user.getId();
         this.username = user.getUsername();
+        this.rank = user.getRank();
         //this.problems = user.getSolvedProblem();
     }
 }
