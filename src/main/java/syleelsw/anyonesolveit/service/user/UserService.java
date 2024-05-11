@@ -101,6 +101,7 @@ public class UserService {
             Integer rank = rankAndProblems.rank;
             SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
             user.update(rank, solvedProblem, userProfile);
+            log.info("업데이트 저장: {}", user);
             userRepository.save(user);
         }catch (IllegalStateException e){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
