@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.aops.IgnoreValidation;
 import syleelsw.anyonesolveit.api.study.dto.ChangeMangerRequest;
 import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
+import syleelsw.anyonesolveit.api.study.dto.ParticipationRequestDTO;
 import syleelsw.anyonesolveit.api.study.dto.StudyDto;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
@@ -87,7 +88,9 @@ public class StudyController {
     }
 
     @PostMapping("/participation/confirm")
-    public ResponseEntity confirmParticipation(@RequestHeader String Access, @RequestParam String participationId, @RequestParam Boolean confirm){
+    public ResponseEntity confirmParticipation(@RequestHeader String Access, @RequestBody ParticipationRequestDTO participationRequestDTO){
+        String participationId = participationRequestDTO.getParticipationId();
+        boolean confirm = participationRequestDTO.isConfirm();
         return studyService.confirmParticipation(Access, participationId, confirm);
     }
 
