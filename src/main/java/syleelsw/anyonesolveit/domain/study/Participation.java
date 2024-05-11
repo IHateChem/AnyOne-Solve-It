@@ -10,6 +10,7 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 @Entity
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Participation extends BaseEntity {
     @Id
