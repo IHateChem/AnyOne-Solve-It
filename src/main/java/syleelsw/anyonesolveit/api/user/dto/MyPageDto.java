@@ -34,7 +34,7 @@ public class MyPageDto {
 
     public static MyPageDto of(UserInfo userInfo){
         return builder()
-                .username(userInfo.getUsername())
+                .username(userInfo.getName())
                 .bjname(userInfo.getBjname())
                 .language(userInfo.getLanguage())
                 .prefer_type(userInfo.getPrefer_type())

@@ -42,7 +42,7 @@ public class MyPageResponse {
         return builder()
             .suggestions(suggestions)
             .changedParticipations(changedParticipations)
-            .username(userInfo.getUsername())
+            .username(userInfo.getName())
             .bjname(userInfo.getBjname())
             .rank(userInfo.getRank())
             .language(userInfo.getLanguage())

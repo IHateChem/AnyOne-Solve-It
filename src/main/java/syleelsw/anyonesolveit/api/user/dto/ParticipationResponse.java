@@ -22,7 +22,7 @@ public class ParticipationResponse {
     private Long studyId;
     public ParticipationResponse(Participation participation, Long id){
         this.participationId = participation.getId();
-        this.username = participation.getUser().getUsername();
+        this.username = participation.getUser().getName();
         this.userId = id;
         this.message = participation.getMessage();
         this.state = participation.getState();

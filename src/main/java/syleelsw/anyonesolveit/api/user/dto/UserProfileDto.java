@@ -42,7 +42,7 @@ public class UserProfileDto {
     public static UserProfileDto of(UserInfo userInfo){
         return UserProfileDto.builder()
                 .id(userInfo.getId())
-                .username(userInfo.getUsername())
+                .username(userInfo.getName())
                 .email(userInfo.getEmail())
                 .area(userInfo.getArea())
                 .city(userInfo.getCity())

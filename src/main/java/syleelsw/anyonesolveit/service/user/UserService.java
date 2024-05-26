@@ -285,7 +285,7 @@ public class UserService {
     public ResponseEntity getInformation(String access) {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        String username = user.getUsername();
+        String username = user.getName();
         String picture = user.getPicture();
         String email = user.getEmail();
         return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);

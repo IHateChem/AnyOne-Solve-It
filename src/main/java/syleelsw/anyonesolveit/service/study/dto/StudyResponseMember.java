@@ -17,7 +17,7 @@ public class StudyResponseMember {
 
     public StudyResponseMember(UserInfo user){
         this.id = user.getId();
-        this.username = user.getUsername();
+        this.username = user.getName();
         this.rank = user.getRank();
         //this.problems = user.getSolvedProblem();
     }

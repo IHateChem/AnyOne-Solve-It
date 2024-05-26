@@ -13,11 +13,11 @@ public class ProblemResponse {
     private List<String> types;
     private String link;
     private Integer rank;
-    private Integer problemId;
+    private Integer probNum;
     @Builder
-    private ProblemResponse(Integer problemId, String title, List<String> types, String link, Integer rank) {
+    private ProblemResponse(Integer problemNum, String title, List<String> types, String link, Integer rank) {
         this.title = title;
-        this.problemId = problemId;
+        this.probNum = problemNum;
         this.types = types;
         this.link = link;
         this.rank = rank;
@@ -25,7 +25,7 @@ public class ProblemResponse {
     public static ProblemResponse of(SolvedacItem item){
         return builder()
                 .title(item.getTitleKo())
-                .problemId(item.getProblemId())
+                .problemNum(item.getProblemId())
                 .types(item.getTags().stream().map(t -> t.getKey()).toList())
                 .link("https://www.acmicpc.net/problem/"+item.getProblemId())
                 .rank(item.getLevel())
@@ -35,7 +35,7 @@ public class ProblemResponse {
     public static ProblemResponse of(Problem item){
         return builder()
                 .title(item.getTitle())
-                .problemId(Math.toIntExact(item.getId()))
+                .problemNum(Math.toIntExact(item.getId()))
                 .types(item.getTypes())
                 .link(item.getLink())
                 .rank(item.getRank())

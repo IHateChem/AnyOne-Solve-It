@@ -336,6 +336,7 @@ public class StudyService {
         ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
         participation.setState(state);
         int noticeType = confirm ? 1 : 2;
+        participationRepository.deleteById(participationId);
         noticeService.createNoticeType1to4(participation.getStudy(), participation.getUser(), noticeType);
         return getGoodResponse();
     }
@@ -362,7 +363,7 @@ public class StudyService {
     public ResponseEntity getMyStudySelf(String access) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        List<Study> studies = studyRepository.findAllByUser(user);
+        List<Study> studies = studyRepository.findAllByUser(user).stream().filter(study->study.getMembers().size() > 1).collect(Collectors.toList());
         //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
     }
