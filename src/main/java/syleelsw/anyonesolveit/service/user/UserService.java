@@ -60,9 +60,11 @@ public class UserService {
     class Job implements Runnable{
         String url;
         Set set;
-        public Job(String url, Set set){
+        CountDownLatch latch;
+        public Job(String url, Set set, CountDownLatch latch){
             this.url = url;
             this.set = set;
+            this.latch = latch;
         }
         @Override
         public void run() {
@@ -75,6 +77,8 @@ public class UserService {
 
             }catch (Exception e){
                 e.printStackTrace();
+            }finally {
+                latch.countDown();
             }
 
         }
@@ -138,18 +142,28 @@ public class UserService {
         log.info("SolvedProblem: {}", solvedCount);
 
         Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
+
         int pageCount = (int) (solvedCount / 50) + 1;
+        CountDownLatch latch = new CountDownLatch(pageCount);
 
         for (int i = 0; i < pageCount; i++) {
             String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
-            Job task = new Job(url, problemSet);
+            Job task = new Job(url, problemSet, latch);
             executor.execute(task);
         }
-        log.info("problemSet: {}", problemSet.size());
-        return SolvedProblemDto.builder()
-                .solvedProblems(problemSet.stream().toList())
-                .solved(user_level_problem)
-                .build();
+
+        try {
+            latch.await(); // 모든 작업이 완료될 때까지 대기
+            log.info("쓰레드 작업 완료");
+            return SolvedProblemDto.builder()
+                    .solvedProblems(problemSet.stream().toList())
+                    .solved(user_level_problem)
+                    .build();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Tasks interrupted");
+        }
+        throw new RuntimeException();
     }
 
     public ResponseEntity getMyApply(String access) {
@@ -257,6 +271,7 @@ public class UserService {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Notice> byId = noticeService.findById(id);
+        log.info("del info: {}", byId.get().toString());
         if(byId.isEmpty() || !byId.get().getToUser().equals(user)) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         noticeService.delById(id);
         return new ResponseEntity(HttpStatus.OK);
