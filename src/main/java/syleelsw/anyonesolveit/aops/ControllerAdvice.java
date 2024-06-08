@@ -59,7 +59,7 @@ public class ControllerAdvice {
         return refreshRedisRepository.findById(id).isPresent();
     }
 
-    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, id, ..) && !@annotation(IgnoreValidation )")
+    @Around("syleelsw.anyonesolveit.aops.Pointcuts.allApi() && args(Access, id, ..) && !@annotation(IgnoreValidation) && !@annotation(Notices)")
     public ResponseEntity idValidation(ProceedingJoinPoint joinPoint, String Access, Long id) throws Throwable {
         if(studyRepository.findById(id).isPresent()){
             return (ResponseEntity) joinPoint.proceed();
