@@ -98,7 +98,8 @@ public class LoginService {
         }
         userRepository.save(userInfo);
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
-        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+        int notices = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(userInfo).get().size();
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", userInfo.isFirst(), "notices" , notices), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
     }
 
     public ResponseEntity googleLogin(String authCode,Provider authProvider){

@@ -288,6 +288,7 @@ public class UserService {
         String username = user.getName();
         String picture = user.getPicture();
         String email = user.getEmail();
-        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);
+        int notices = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user).get().size();
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst(), "notices" , notices), HttpStatus.OK);
     }
 }
