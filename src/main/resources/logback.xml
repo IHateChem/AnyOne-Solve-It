@@ -31,11 +31,9 @@
         </appender>
 
         <root level="ERROR">
-            <appender-ref ref="STDOUT" />
             <appender-ref ref="error" />
         </root>;
         <root level="INFO">
-            <appender-ref ref="STDOUT" />
             <appender-ref ref="error" />
         </root>;
     </springProfile>
@@ -56,10 +54,8 @@
 
         <root level="ERROR">
             <appender-ref ref="access" />
-            <appender-ref ref="STDOUT" />
         </root>
         <root level="INFO">
-            <appender-ref ref="STDOUT" />
             <appender-ref ref="access" />
         </root>;
     </springProfile>
