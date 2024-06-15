@@ -60,7 +60,7 @@ dependencies {
     //mockito
     testImplementation 'org.mockito:mockito-core:4.8.0'
     // log
-
+    implementation group: "ch.qos.logback", name:"logback-classic", version:"1.4.7"
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     //log in NHN
     // implementation group: 'org.json', name: 'json', version: '20240205'
