@@ -43,9 +43,9 @@
     <!-- prod 환경 설정 -->
     <springProfile name="prod">
         <appender name="access" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>/var/log/anyone/access.log</file>
+            <file>log/access.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>/var/log/anyone/backup/access%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+                <fileNamePattern>log/backup/access%d{yyyy-MM-dd}.log.zip</fileNamePattern>
                 <maxHistory>90</maxHistory>
             </rollingPolicy>
             <encoder>
@@ -56,8 +56,10 @@
 
         <root level="ERROR">
             <appender-ref ref="access" />
+            <appender-ref ref="STDOUT" />
         </root>
         <root level="INFO">
+            <appender-ref ref="STDOUT" />
             <appender-ref ref="access" />
         </root>;
     </springProfile>
