@@ -287,6 +287,7 @@ public class UserService {
 
             return new ResponseEntity(ValidateResponse.builder()
                     .valid(true)
+                    .userId(userByEmail.get().getId())
                     .bjname(userByEmail.get().getBjname())
                     .username(userByEmail.get().getName())
                     .build(), HttpStatus.OK);
