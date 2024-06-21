@@ -286,9 +286,9 @@ public class UserService {
         }else{
 
             return new ResponseEntity(ValidateResponse.builder()
-                    .valid(false)
+                    .valid(true)
                     .bjname(userByEmail.get().getBjname())
-                    .username(userByEmail.get().getUsername())
+                    .username(userByEmail.get().getName())
                     .build(), HttpStatus.OK);
         }
     }
