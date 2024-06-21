@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserInfo, Long> {
-    UserInfo findUserByEmail(String email);
+    Optional<UserInfo> findUserByEmail(String email);
 
     @Query(value = "SELECT u.email FROM UserInfo u WHERE u.email LIKE %:userId%")
     List<String> searchByEmail(String userId);

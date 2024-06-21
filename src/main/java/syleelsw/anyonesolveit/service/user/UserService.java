@@ -27,6 +27,7 @@ import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.NoticeService;
 import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
+import syleelsw.anyonesolveit.service.validation.dto.ValidateResponse;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -277,9 +278,19 @@ public class UserService {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    public ResponseEntity searchUser(String userId) {
-        List<String> userInfos = userRepository.searchByEmail(userId);
-        return new ResponseEntity(Map.of("results", userInfos), HttpStatus.OK);
+    public ResponseEntity searchUser(String email) {
+        Optional<UserInfo> userByEmail = userRepository.findUserByEmail(email);
+        if(userByEmail.isEmpty()){
+            return new ResponseEntity(ValidateResponse.builder()
+                    .valid(false).build(),HttpStatus.OK);
+        }else{
+
+            return new ResponseEntity(ValidateResponse.builder()
+                    .valid(false)
+                    .bjname(userByEmail.get().getBjname())
+                    .username(userByEmail.get().getUsername())
+                    .build(), HttpStatus.OK);
+        }
     }
 
     public ResponseEntity getInformation(String access) {

@@ -75,11 +75,11 @@ public class UserController {
         return userService.delNotices(Access, id);
     }
 
-    @GetMapping("/api/user/search")
-    public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String userId){
-        return userService.searchUser(userId);
+    @GetMapping("/search")
+    public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String email){
+        return userService.searchUser(email);
     }
-    @GetMapping("/api/user/search/userId")
+    @GetMapping("/search/userId")
     public ResponseEntity searchUserIdByBjId(@RequestHeader String Access, @RequestParam String bjId){
         return userService.searchUserByBjId(bjId);
     }

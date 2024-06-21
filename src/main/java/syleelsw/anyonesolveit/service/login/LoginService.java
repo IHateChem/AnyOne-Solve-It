@@ -77,7 +77,7 @@ public class LoginService {
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = userRepository.findUserByEmail(email).get();
         String username = "dltjrdn";
         if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
         findUserAndJoin(email, username, Provider.test, "");
@@ -87,7 +87,7 @@ public class LoginService {
 
 
     public ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
-        UserInfo userInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = userRepository.findUserByEmail(email).get();
         if(userInfo == null) { userInfo = join(email, username, provider, picture);}
         if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
         if(userInfo.getBjname()!=null){
