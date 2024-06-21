@@ -9,17 +9,26 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @Order(OrderedFilter.HIGHEST_PRECEDENCE)
 public class CorsFilter implements Filter {
+
+    // todo: 배포시에는 localhost 없애기.
+    private static final List<String> allowedOrigins = Arrays.asList("https://fe.anyone-solve.pe.kr", "http://localhost:3000");
+
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
+
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
         String origin = request.getHeader("Origin");
-        response.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
-        response.setHeader("Access-Control-Allow-Origin", "https://fe.anyone-solve.pe.kr");
+        if (allowedOrigins.contains(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+        }
+
         response.setHeader("Access-Control-Allow-Credentials", "true");
         response.setHeader("Access-Control-Allow-Methods","GET,POST,PUT,DELETE,OPTIONS");
         response.setHeader("Access-Control-Max-Age", "3600");
