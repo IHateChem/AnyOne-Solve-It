@@ -7,10 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.aops.IgnoreValidation;
-import syleelsw.anyonesolveit.api.study.dto.ChangeMangerRequest;
-import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
-import syleelsw.anyonesolveit.api.study.dto.ParticipationRequestDTO;
-import syleelsw.anyonesolveit.api.study.dto.StudyDto;
+import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
@@ -68,6 +65,13 @@ public class StudyController {
     public ResponseEntity changeManger(@RequestHeader String Access, @PathVariable Long id, @RequestBody ChangeMangerRequest changeMangerRequest){
         return studyService.changeManger(Access, id, changeMangerRequest.getUserId());
     }
+
+
+    @PatchMapping("/studies/{id}/recruiting")
+    public ResponseEntity changeRecruiting(@RequestHeader String Access,@PathVariable Long id, @RequestBody ChangeRecruitingRequest changeRecruitingRequest){
+        return studyService.changeRecruiting(Access, id, changeRecruitingRequest.isRecruiting());
+    }
+
     @PostMapping("/studies/{id}/out")
     public ResponseEntity studyOut(@RequestHeader String Access, @PathVariable Long id){
         return studyService.studyOut(Access, id);

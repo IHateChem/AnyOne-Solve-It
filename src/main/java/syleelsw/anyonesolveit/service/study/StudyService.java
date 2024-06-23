@@ -106,7 +106,9 @@ public class StudyService {
     }
     @Transactional
     public ResponseEntity<StudyResponse> getStudy(String access, Long id) {
-        Study study = studyRepository.findById(id).get();
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(studyOptional.isEmpty()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Study study = studyOptional.get();
         study.setPopularity(study.getPopularity()+1);
         studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
         if(access != null) {
@@ -454,5 +456,14 @@ public class StudyService {
             isExist = false;
         }
         return new ResponseEntity(SearchProblemDto.of(isExist, study, problemId), HttpStatus.OK);
+    }
+
+    public ResponseEntity changeRecruiting(String access, Long id, boolean recruiting) {
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+        study.setRecruiting(recruiting);
+        studyRepository.save(study);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }
