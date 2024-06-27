@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class JwtTokenProvider {
     public String secretKey;
     private Key key;
-    static long REFRESH_TOKEN_VALID_MILLISECOND = 600000;// 172800000;
+    static long REFRESH_TOKEN_VALID_MILLISECOND = 172800000;
     static long ACCESS_TOKEN_VALID_MILLISECOND = 180000; // 3600000;
     public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
         this.secretKey = secretKey;
