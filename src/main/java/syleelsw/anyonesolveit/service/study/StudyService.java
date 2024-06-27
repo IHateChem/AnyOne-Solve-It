@@ -231,7 +231,7 @@ public class StudyService {
     }
 
     public ResponseEntity getSuggestion(Long id) {
-        Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByStudyIdDesc(id);
+        Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByIdDesc(id);
         if(top10ByIdDesc.isEmpty()){
             return getBadResponse();
         }else{

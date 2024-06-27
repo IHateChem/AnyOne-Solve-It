@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity, String> {
 
-    Optional<List<StudyProblemEntity>> findTop10ByStudyIdOrderByStudyIdDesc(Long id);
+    Optional<List<StudyProblemEntity>> findTop10ByStudyIdOrderByIdDesc(Long id);
 
     @Modifying
     @Query("delete from StudyProblemEntity c where c.study = :study")
