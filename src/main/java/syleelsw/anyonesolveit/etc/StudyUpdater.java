@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class StudyUpdater {
     private final StudyRepository studyRepository;
     private final UserRepository userRepository;
-    @Qualifier("threadPoolTaskExecutor")
+    @Qualifier("taskExecutor")
     private final Executor executor;
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional

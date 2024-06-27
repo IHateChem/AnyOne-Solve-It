@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import syleelsw.anyonesolveit.aops.Notices;
 import syleelsw.anyonesolveit.api.user.dto.MyPageDto;
 import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.service.user.UserService;
@@ -69,13 +70,17 @@ public class UserController {
         return userService.getInformation(Access);
     }
 
-    @DeleteMapping("/notices/{id}")
+    @DeleteMapping("/notices/{id}") @Notices
     public ResponseEntity delNotices(@RequestHeader String Access,@PathVariable Long id){
         return userService.delNotices(Access, id);
     }
 
-    @GetMapping("/api/user/search")
-    public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String userId){
-        return userService.searchUser(userId);
+    @GetMapping("/search")
+    public ResponseEntity searchId(@RequestHeader String Access, @RequestParam String email){
+        return userService.searchUser(email);
+    }
+    @GetMapping("/search/userId")
+    public ResponseEntity searchUserIdByBjId(@RequestHeader String Access, @RequestParam String bjId){
+        return userService.searchUserByBjId(bjId);
     }
 }

@@ -39,3 +39,7 @@ out/
 ### 설정 코드
 **/resources/application.yml
 **/resources/logback.yml
+
+##로그파일
+*.log
+**/log/

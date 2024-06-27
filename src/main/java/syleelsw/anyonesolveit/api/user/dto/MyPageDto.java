@@ -18,25 +18,28 @@ public class MyPageDto {
     private String bjname;
     private String prefer_type;
     private String area;
+    private String city;
     private LanguageTypes language;
 
 
     @Builder
-    public MyPageDto(String username, String bjname, String prefer_type, String area, LanguageTypes language) {
+    public MyPageDto(String username, String bjname, String prefer_type,String city, String area, LanguageTypes language) {
         this.username = username;
         this.bjname = bjname;
         this.prefer_type = prefer_type;
+        this.city = city;
         this.area = area;
         this.language = language;
     }
 
     public static MyPageDto of(UserInfo userInfo){
         return builder()
-                .username(userInfo.getUsername())
+                .username(userInfo.getName())
                 .bjname(userInfo.getBjname())
                 .language(userInfo.getLanguage())
                 .prefer_type(userInfo.getPrefer_type())
-                .area(userInfo.getArea().toString() + " " + userInfo.getCity())
+                .area(userInfo.getArea().toString())
+                .city(userInfo.getCity())
                 .build();
     }
 

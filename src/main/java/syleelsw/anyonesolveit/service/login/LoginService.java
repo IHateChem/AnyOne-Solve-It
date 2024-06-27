@@ -13,6 +13,10 @@ import syleelsw.anyonesolveit.api.user.dto.UserProfileDto;
 import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
+import syleelsw.anyonesolveit.domain.study.Notice;
+import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.etc.JwtTokenProvider;
@@ -27,10 +31,7 @@ import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service @RequiredArgsConstructor @Slf4j
 public class LoginService {
@@ -39,6 +40,8 @@ public class LoginService {
     private final RefreshRedisRepository refreshRedisRepository;
     private final TokenValidationService tokenValidationService;
     private final UserRepository userRepository;
+    private final NoticeRepository noticeRepository;
+    private final StudyRepository studyRepository;
     private final UserService userService;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
@@ -61,6 +64,7 @@ public class LoginService {
             log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
+            log.info("jwtHeaders: {}", jwtHeaders);
             refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
@@ -74,7 +78,7 @@ public class LoginService {
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = userRepository.findUserByEmail(email).get();
         String username = "dltjrdn";
         if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
         findUserAndJoin(email, username, Provider.test, "");
@@ -84,7 +88,7 @@ public class LoginService {
 
 
     public ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
-        UserInfo userInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = userRepository.findUserByEmail(email).get();
         if(userInfo == null) { userInfo = join(email, username, provider, picture);}
         if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
         if(userInfo.getBjname()!=null){
@@ -95,7 +99,8 @@ public class LoginService {
         }
         userRepository.save(userInfo);
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
-        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", userInfo.isFirst()), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
+        int notices = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(userInfo).get().size();
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", userInfo.isFirst(), "notices" , notices), tokenValidationService.getJwtHeaders(userInfo.getId(), refresh), HttpStatus.OK);
     }
 
     public ResponseEntity googleLogin(String authCode,Provider authProvider){
@@ -106,6 +111,7 @@ public class LoginService {
         GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
+        log.info("usernaem: {}", username);
         String picture = googleInfoResponse.getPicture();
         return findUserAndJoin(email, username, authProvider, picture);
     }
@@ -242,4 +248,37 @@ public class LoginService {
         if(email.equals(null)) return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         return findUserAndJoin(email, username, Provider.GITHUB, picture);
     }
+
+    @Transactional
+    public ResponseEntity withdraw(String access) {
+        Long userId = provider.getUserId(access);
+        UserInfo user = userRepository.findById(userId).get();
+        List<Study> studiesByMember = studyRepository.findStudiesByMember(user);
+        // 멤버가 1명인 스터디이거나, 본인이 관리자가 아닌 것들만 남아있어야 한다.
+        if(studiesByMember.stream().filter(study -> study.getMembers().size() == 1 || study.getUser() != user).toArray().length
+            != studiesByMember.size()){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        //탈퇴처리를 한다.
+        studiesByMember.stream().forEach( study ->{
+            if(study.getMembers().size() == 1){
+                studyRepository.delete(study);
+            }else{
+                study.getMembers().remove(user);
+                studyRepository.save(study);
+            }
+        });
+        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
+        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
+            allByToUserOrderByModifiedDateTimeDesc.get().stream()
+                    .forEach(n -> {
+                        noticeRepository.delete(n);
+                    });
+        }
+        userRepository.delete(user);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+
 }

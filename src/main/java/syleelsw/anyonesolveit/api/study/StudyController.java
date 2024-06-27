@@ -1,13 +1,13 @@
 package syleelsw.anyonesolveit.api.study;
 
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import syleelsw.anyonesolveit.api.study.dto.ChangeMangerRequest;
-import syleelsw.anyonesolveit.api.study.dto.ParticipationDTO;
-import syleelsw.anyonesolveit.api.study.dto.StudyDto;
+import syleelsw.anyonesolveit.aops.IgnoreValidation;
+import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
@@ -28,8 +28,8 @@ public class StudyController {
     public ResponseEntity createStudy(@RequestHeader String Access, @Validated @RequestBody StudyDto studyDto){
         return studyService.createStudy(Access, studyDto);
     }
-    @GetMapping("/studies/{id}")
-    public ResponseEntity getStudy(@RequestHeader String Access, @PathVariable Long id){
+    @GetMapping("/studies/{id}") @IgnoreValidation()
+    public ResponseEntity getStudy(@RequestHeader(required = false) String Access, @PathVariable Long id){
         return studyService.getStudy(Access, id);
     }
 
@@ -65,6 +65,13 @@ public class StudyController {
     public ResponseEntity changeManger(@RequestHeader String Access, @PathVariable Long id, @RequestBody ChangeMangerRequest changeMangerRequest){
         return studyService.changeManger(Access, id, changeMangerRequest.getUserId());
     }
+
+
+    @PatchMapping("/studies/{id}/recruiting")
+    public ResponseEntity changeRecruiting(@RequestHeader String Access,@PathVariable Long id, @RequestBody ChangeRecruitingRequest changeRecruitingRequest){
+        return studyService.changeRecruiting(Access, id, changeRecruitingRequest.isRecruiting());
+    }
+
     @PostMapping("/studies/{id}/out")
     public ResponseEntity studyOut(@RequestHeader String Access, @PathVariable Long id){
         return studyService.studyOut(Access, id);
@@ -85,7 +92,9 @@ public class StudyController {
     }
 
     @PostMapping("/participation/confirm")
-    public ResponseEntity confirmParticipation(@RequestHeader String Access, @RequestParam String participationId, @RequestParam Boolean confirm){
+    public ResponseEntity confirmParticipation(@RequestHeader String Access, @RequestBody ParticipationRequestDTO participationRequestDTO){
+        String participationId = participationRequestDTO.getParticipationId();
+        boolean confirm = participationRequestDTO.isConfirm();
         return studyService.confirmParticipation(Access, participationId, confirm);
     }
 

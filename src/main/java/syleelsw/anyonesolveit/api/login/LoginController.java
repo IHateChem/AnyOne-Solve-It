@@ -14,6 +14,8 @@ import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
 import syleelsw.anyonesolveit.service.login.LoginService;
 import syleelsw.anyonesolveit.service.user.UserService;
 
+import java.util.Map;
+
 @RestController @RequestMapping("/api")
 @RequiredArgsConstructor @Slf4j
 public class LoginController {
@@ -60,7 +62,7 @@ public class LoginController {
 
     @PostMapping("/update/token") @RefreshTokenValidation
     public ResponseEntity updateToken(@RequestBody UpdateTokenRequest updateTokenDto){
-        return new ResponseEntity(loginService.updateRefreshToken(updateTokenDto.getRefresh()), HttpStatus.OK);
+        return loginService.updateRefreshToken(updateTokenDto.getRefresh());
     }
 
 

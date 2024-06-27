@@ -32,7 +32,7 @@ public class Problem{
     public static Problem of(ProblemResponse problemResponse){
         return builder()
                 .link(problemResponse.getLink())
-                .problemId(problemResponse.getProblemId())
+                .problemId(problemResponse.getProbNum())
                 .title(problemResponse.getTitle())
                 .types(problemResponse.getTypes())
                 .rank(problemResponse.getRank())

@@ -72,6 +72,7 @@ public class UserInfo extends BaseEntity {
         this.bjname = userProfile.getBjname();
         this.prefer_type = userProfile.getPrefer_type();
         this.area = userProfile.getArea();
+        this.city = userProfile.getCity();
         this.language = userProfile.getLanguage();
         this.isFirst = false;
         this.solved = (long) getSolvedProblem().size();

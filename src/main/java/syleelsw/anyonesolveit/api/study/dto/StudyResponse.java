@@ -57,7 +57,7 @@ public class StudyResponse {
                 .language(study.getLanguage())
                 .members(study.getMembers().stream().map(t -> StudyMember.fromUserInfo(t)).collect(Collectors.toList()))
                 .solved(study.getMembers().stream().map(t ->
-                        UserSolvedDto.builder().problems(t.getSolvedProblem()).username(t.getUsername()).rank(t.getRank()).build()).collect(Collectors.toList()))
+                        UserSolvedDto.builder().problems(t.getSolvedProblem()).username(t.getName()).rank(t.getRank()).build()).collect(Collectors.toList()))
                 .level(study.getLevel())
                 .area(study.getArea().toString()+" "+study.getCity())
                 .meeting_type(study.getMeeting_type())
