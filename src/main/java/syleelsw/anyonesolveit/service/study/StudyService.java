@@ -424,7 +424,7 @@ public class StudyService {
         return getGoodResponse();
     }
 
-
+    @Transactional
     public ResponseEntity changeManger(String access, Long id, Long nextUserId) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();

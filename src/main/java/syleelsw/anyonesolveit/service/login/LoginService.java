@@ -64,6 +64,7 @@ public class LoginService {
             log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
+            log.info("jwtHeaders: {}", jwtHeaders);
             refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{

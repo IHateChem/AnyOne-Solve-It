@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
-class LoginServiceTest {
+class ㅌLoginServiceTest {
     @Autowired
     private LoginService loginService;
 

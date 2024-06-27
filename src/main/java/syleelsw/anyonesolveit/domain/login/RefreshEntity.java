@@ -14,6 +14,6 @@ public class RefreshEntity {
     public RefreshEntity(Long id, String refreshToken){
         this.id = id;
         this.refreshToken = refreshToken;
-        this.expired = System.currentTimeMillis() + 3600000 - 1000;
+        this.expired = System.currentTimeMillis() + 180000 -1000; // 3600000 - 1000;
     }
 }
