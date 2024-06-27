@@ -151,6 +151,9 @@ public class TokenValidationService {
         if(refreshEntity.isPresent()){
             log.info("refresh Token data... {}", refreshEntity.get().toString());
             RefreshEntity data = refreshEntity.get();
+            log.info("data.getExpired: {}", data.getExpired());
+            log.info("cur time: {}",System.currentTimeMillis());
+            log.info("is Equal: {}",data.getRefreshToken().equals(jwt));
             if(!data.getRefreshToken().equals(jwt) || data.getExpired() > System.currentTimeMillis()){
                 return false;
             }
