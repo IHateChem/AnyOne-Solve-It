@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @ToString
 @Slf4j
 public class StudyResponse{
-    private Long id;
+    private Long userId;
     private String title;
     private String description;
     private LanguageTypes language;
@@ -40,8 +40,8 @@ public class StudyResponse{
     private List<StudyResponseMember> members;
     private StudyResponseMember manager;
     @Builder
-    private StudyResponse(Long id,Integer how_many, StudyResponseMember manager, Integer avg_rank,String openchat, boolean recruiting,  boolean participated,  Float avg_solved, String title, String city,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<StudyResponseMember> members) {
-        this.id = id;
+    private StudyResponse(Long userId,Integer how_many, StudyResponseMember manager, Integer avg_rank,String openchat, boolean recruiting,  boolean participated,  Float avg_solved, String title, String city,  String description, LanguageTypes language, GoalTypes level, Locations area, String meeting_type, String period, String frequency, String study_time, List<StudyResponseMember> members) {
+        this.userId = userId;
         this.how_many = how_many;
         this.manager = manager;
         this.openchat = openchat;
@@ -63,7 +63,7 @@ public class StudyResponse{
     }
     public static StudyResponse of(Study study){
         return builder()
-                .id(study.getId())
+                .userId(study.getId())
                 .how_many(study.getHow_many())
                 .title(study.getTitle())
                 .openchat(study.getOpenchat())
@@ -87,7 +87,7 @@ public class StudyResponse{
     public static StudyResponse of(Study study, UserInfo userInfo){
         log.info("{}", study.getMembers().stream().map(UserInfo::getSolved).collect(Collectors.toList()));
         return builder()
-                .id(study.getId())
+                .userId(study.getId())
                 .title(study.getTitle())
                 .description(study.getDescription())
                 .manager(new StudyResponseMember(study.getUser()))
