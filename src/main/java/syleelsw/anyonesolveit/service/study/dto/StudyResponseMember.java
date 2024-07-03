@@ -10,13 +10,13 @@ import java.util.List;
 @Getter
 @NoArgsConstructor @ToString
 public class StudyResponseMember {
-    private Long id;
+    private Long userId;
     private String username;
     private int rank;
     //private List<Integer> problems;
 
     public StudyResponseMember(UserInfo user){
-        this.id = user.getId();
+        this.userId = user.getId();
         this.username = user.getName();
         this.rank = user.getRank();
         //this.problems = user.getSolvedProblem();
