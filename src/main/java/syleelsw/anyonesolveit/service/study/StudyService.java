@@ -424,6 +424,7 @@ public class StudyService {
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
+    @Transactional
     public ResponseEntity delAllSuggestion(String access, Long id) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
