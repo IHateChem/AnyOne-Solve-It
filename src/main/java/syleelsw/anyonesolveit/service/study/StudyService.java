@@ -11,13 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.*;
-import syleelsw.anyonesolveit.domain.study.Participation;
-import syleelsw.anyonesolveit.domain.study.Problem;
+import syleelsw.anyonesolveit.domain.study.*;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.*;
-import syleelsw.anyonesolveit.domain.study.Study;
-import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
@@ -46,6 +43,7 @@ public class StudyService {
     private final ParticipationRepository participationRepository;
     private final NoticeService noticeService;
     private final StudyUpdater studyUpdater;
+    private final NoticeRepository noticeRepository;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
@@ -327,6 +325,17 @@ public class StudyService {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         Participation participation = participationRepository.findById(participationId).get();
+        // 알림을 지운다.
+        // participationId는 userId_studyId로 이루어져 있다. participationId를 _를 기준으로 파싱해서 userId와 StudyId를 얻는다.
+        Long participationUserId = Long.parseLong(participationId.split("_")[0]);
+        Long participationStudyId = Long.parseLong(participationId.split("_")[1]);
+
+        UserInfo pUser = userRepository.findById(participationUserId).get();
+        Study pStudy = studyRepository.findById(participationStudyId).get();
+
+        Optional<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
+
+        log.info("findNoticeByUserAndpUser: {}", byUserAndStudyIdAndToUser);
 
         if(confirm){
             Long studyId = participation.getStudy().getId();
