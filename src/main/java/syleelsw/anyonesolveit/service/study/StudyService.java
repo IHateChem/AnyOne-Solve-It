@@ -330,12 +330,6 @@ public class StudyService {
         Long participationUserId = Long.parseLong(participationId.split("_")[0]);
         Long participationStudyId = Long.parseLong(participationId.split("_")[1]);
 
-        UserInfo pUser = userRepository.findById(participationUserId).get();
-        Study pStudy = studyRepository.findById(participationStudyId).get();
-
-        List<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
-
-        log.info("findNoticeByUserAndpUser: {}",  byUserAndStudyIdAndToUser);
 
         if(confirm){
             Long studyId = participation.getStudy().getId();
@@ -349,6 +343,14 @@ public class StudyService {
         int noticeType = confirm ? 1 : 2;
         participationRepository.deleteById(participationId);
         noticeService.createNoticeType1to4(participation.getStudy(), participation.getUser(), noticeType);
+
+        UserInfo pUser = userRepository.findById(participationUserId).get();
+        Study pStudy = studyRepository.findById(participationStudyId).get();
+
+        List<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
+        if(byUserAndStudyIdAndToUser.size() == 1) {
+            noticeRepository.delete(byUserAndStudyIdAndToUser.get(0));
+        }
         return getGoodResponse();
     }
     public ResponseEntity getMyStudy(String access) {
@@ -397,7 +399,7 @@ public class StudyService {
 
         if(study.getUser().equals(user)){
             // 스터디원이 한명밖에 없는경우
-            if(study.getUser() == user) {
+            if(study.getMembers().size()==1) {
                 studyRepository.delete(study);
             }
             return getGoodResponse(Map.of("isManager", true));
