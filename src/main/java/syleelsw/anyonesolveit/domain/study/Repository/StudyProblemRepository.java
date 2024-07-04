@@ -16,7 +16,5 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
 
     Optional<List<StudyProblemEntity>> findTop10ByStudyIdOrderByModifiedDateTimeDesc(Long id);
 
-    @Modifying
-    @Query("delete from StudyProblemEntity c where c.study = :study")
-    void deleteAllByStudy(@Param("study") Study study);
+    void deleteAllByStudy(Study study);
 }
