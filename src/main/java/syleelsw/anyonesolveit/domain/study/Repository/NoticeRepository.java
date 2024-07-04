@@ -20,7 +20,7 @@ public interface NoticeRepository  extends JpaRepository<Notice, Long> {
 
     @Modifying
     @Query(value = "Select n FROM Notice n WHERE n.user = :user AND n.study = :study AND n.toUser = :toUser")
-    Optional<Notice> findByUserAndStudyIdAndToUser(UserInfo user, UserInfo toUser, Study study);
+    List<Notice> findByUserAndStudyIdAndToUser(UserInfo user, UserInfo toUser, Study study);
 
     Optional<List<Notice>> findAllByToUserOrderByModifiedDateTimeDesc(UserInfo userInfo);
     @Modifying

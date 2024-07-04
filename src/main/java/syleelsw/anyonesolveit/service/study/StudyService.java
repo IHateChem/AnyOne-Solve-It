@@ -333,9 +333,9 @@ public class StudyService {
         UserInfo pUser = userRepository.findById(participationUserId).get();
         Study pStudy = studyRepository.findById(participationStudyId).get();
 
-        // Optional<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
+        List<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
 
-        log.info("findNoticeByUserAndpUser: {}, {}", pUser, pStudy);
+        log.info("findNoticeByUserAndpUser: {}",  byUserAndStudyIdAndToUser);
 
         if(confirm){
             Long studyId = participation.getStudy().getId();
