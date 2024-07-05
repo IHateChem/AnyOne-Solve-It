@@ -184,9 +184,8 @@ public class StudyService {
         Study study = studyRepository.findById(id).get();
 
         //알림생성
-        studyRepository.delete(study);
         noticeService.deleteAllByStudy(study);
-        study.getMembers().forEach(t-> noticeService.createNoticeType1to4(study, t, 4));
+        studyRepository.delete(study);
         return getGoodResponse();
     }
     private void saveProblem(Long id, SolvedacItem problem){
