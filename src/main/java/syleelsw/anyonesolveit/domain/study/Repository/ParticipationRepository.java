@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface ParticipationRepository  extends JpaRepository<Participation, String> {
     Optional<List<Participation>> findAllByUser(UserInfo user);
-
+    void deleteAllByStudy(Study study);
     @Query(value = "select p from Participation p where (p.study.user = :user) order by p.modifiedDateTime DESC")
     Optional<List<Participation>> findMyParticipationsByUser(UserInfo user);
 }

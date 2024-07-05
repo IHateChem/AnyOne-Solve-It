@@ -185,6 +185,8 @@ public class StudyService {
 
         //알림생성
         noticeService.deleteAllByStudy(study);
+        participationRepository.deleteAllByStudy(study);
+        studyProblemRepository.deleteAllByStudy(study);
         studyRepository.delete(study);
         return getGoodResponse();
     }
