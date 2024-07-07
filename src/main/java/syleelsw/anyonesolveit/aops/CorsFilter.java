@@ -17,7 +17,7 @@ import java.util.List;
 public class CorsFilter implements Filter {
 
     // todo: 배포시에는 localhost 없애기.
-    private static final List<String> allowedOrigins = Arrays.asList("https://fe.anyone-solve.pe.kr", "http://localhost:3000");
+    private static final List<String> allowedOrigins = Arrays.asList("https://anyone-solve.pe.kr", "http://localhost:3000", "https://www.anyone-solve.pe.kr");
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
