@@ -11,13 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.*;
-import syleelsw.anyonesolveit.domain.study.Participation;
-import syleelsw.anyonesolveit.domain.study.Problem;
+import syleelsw.anyonesolveit.domain.study.*;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.*;
-import syleelsw.anyonesolveit.domain.study.Study;
-import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
@@ -46,6 +43,7 @@ public class StudyService {
     private final ParticipationRepository participationRepository;
     private final NoticeService noticeService;
     private final StudyUpdater studyUpdater;
+    private final NoticeRepository noticeRepository;
     private Map<Long, Problem> storeProblem;
     @Value("${anyone.page}")
     private Integer maxPage;
@@ -69,6 +67,8 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Set<UserInfo> members;
+        log.info("{} studyDto is.. .", studyDto);
+
 
         try{
             //잘못된 유저가 있는지 체크
@@ -86,6 +86,9 @@ public class StudyService {
 
         Study study = Study.of(studyDto, members);
         study.setUser(user);
+        Set<UserInfo> memberSet = study.getMembers();
+        memberSet.add(user);
+        study.setMembers(memberSet);
         //스터디 평균 랭크, 푼 문제수 등 계산
         problemSolvedCountUpdater.update(study);
         study = studyRepository.save(study);
@@ -101,12 +104,18 @@ public class StudyService {
     }
     @Transactional
     public ResponseEntity<StudyResponse> getStudy(String access, Long id) {
-        Long userId = jwtTokenProvider.getUserId(access);
-        UserInfo user = userRepository.findById(userId).get();
-        Study study = studyRepository.findById(id).get();
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(studyOptional.isEmpty()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Study study = studyOptional.get();
         study.setPopularity(study.getPopularity()+1);
         studyUpdater.updateUser(study.getMembers().stream().collect(Collectors.toList()));
-        return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
+        if(access != null) {
+            Long userId = jwtTokenProvider.getUserId(access);
+            UserInfo user = userRepository.findById(userId).get();
+            return new ResponseEntity(StudyResponse.of(study, user), HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(StudyResponse.of(study), HttpStatus.OK);
+        }
     }
     private List listSplitter(List t,int page){
         if(t.size() > (page-1)*maxPage){
@@ -175,9 +184,10 @@ public class StudyService {
         Study study = studyRepository.findById(id).get();
 
         //알림생성
-        studyRepository.delete(study);
         noticeService.deleteAllByStudy(study);
-        study.getMembers().forEach(t-> noticeService.createNoticeType1to4(study, t, 4));
+        participationRepository.deleteAllByStudy(study);
+        studyProblemRepository.deleteAllByStudy(study);
+        studyRepository.delete(study);
         return getGoodResponse();
     }
     private void saveProblem(Long id, SolvedacItem problem){
@@ -220,7 +230,7 @@ public class StudyService {
     }
 
     public ResponseEntity getSuggestion(Long id) {
-        Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByStudyIdDesc(id);
+        Optional<List<StudyProblemEntity>> top10ByIdDesc = studyProblemRepository.findTop10ByStudyIdOrderByModifiedDateTimeDesc(id);
         if(top10ByIdDesc.isEmpty()){
             return getBadResponse();
         }else{
@@ -306,6 +316,7 @@ public class StudyService {
 
     @Transactional
     public ResponseEntity confirmParticipation(String access, String participationId, Boolean confirm) {
+        log.info("participationId: {}", participationId);
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
 
@@ -315,15 +326,32 @@ public class StudyService {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         Participation participation = participationRepository.findById(participationId).get();
-        Long studyId = participation.getStudy().getId();
-        Study study = studyRepository.findById(studyId).get();
-        study.getMembers().add(participation.getUser());
-        studyRepository.save(study);
+        // 알림을 지운다.
+        // participationId는 userId_studyId로 이루어져 있다. participationId를 _를 기준으로 파싱해서 userId와 StudyId를 얻는다.
+        Long participationUserId = Long.parseLong(participationId.split("_")[0]);
+        Long participationStudyId = Long.parseLong(participationId.split("_")[1]);
+
+
+        if(confirm){
+            Long studyId = participation.getStudy().getId();
+            Study study = studyRepository.findById(studyId).get();
+            study.getMembers().add(participation.getUser());
+            studyRepository.save(study);
+        }
 
         ParticipationStates state = confirm ? ParticipationStates.승인 :  ParticipationStates.거절;
         participation.setState(state);
         int noticeType = confirm ? 1 : 2;
+        participationRepository.deleteById(participationId);
         noticeService.createNoticeType1to4(participation.getStudy(), participation.getUser(), noticeType);
+
+        UserInfo pUser = userRepository.findById(participationUserId).get();
+        Study pStudy = studyRepository.findById(participationStudyId).get();
+
+        List<Notice> byUserAndStudyIdAndToUser = noticeRepository.findByUserAndStudyIdAndToUser(pUser, user, pStudy);
+        if(byUserAndStudyIdAndToUser.size() == 1) {
+            noticeRepository.delete(byUserAndStudyIdAndToUser.get(0));
+        }
         return getGoodResponse();
     }
     public ResponseEntity getMyStudy(String access) {
@@ -349,7 +377,7 @@ public class StudyService {
     public ResponseEntity getMyStudySelf(String access) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        List<Study> studies = studyRepository.findAllByUser(user);
+        List<Study> studies = studyRepository.findAllByUser(user).stream().filter(study->study.getMembers().size() > 1).collect(Collectors.toList());
         //if(studies.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         return new ResponseEntity(getStudyResponse(studies), HttpStatus.OK) ;
     }
@@ -371,6 +399,10 @@ public class StudyService {
         if(!study.getMembers().contains(user)) return getBadResponse();
 
         if(study.getUser().equals(user)){
+            // 스터디원이 한명밖에 없는경우
+            if(study.getMembers().size()==1) {
+                studyRepository.delete(study);
+            }
             return getGoodResponse(Map.of("isManager", true));
         }
 
@@ -393,6 +425,7 @@ public class StudyService {
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
+    @Transactional
     public ResponseEntity delAllSuggestion(String access, Long id) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
@@ -404,7 +437,7 @@ public class StudyService {
         return getGoodResponse();
     }
 
-
+    @Transactional
     public ResponseEntity changeManger(String access, Long id, Long nextUserId) {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
@@ -436,5 +469,14 @@ public class StudyService {
             isExist = false;
         }
         return new ResponseEntity(SearchProblemDto.of(isExist, study, problemId), HttpStatus.OK);
+    }
+
+    public ResponseEntity changeRecruiting(String access, Long id, boolean recruiting) {
+        Optional<Study> studyOptional = studyRepository.findById(id);
+        if(studyOptional.isEmpty()) return getBadResponse();
+        Study study = studyOptional.get();
+        study.setRecruiting(recruiting);
+        studyRepository.save(study);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }

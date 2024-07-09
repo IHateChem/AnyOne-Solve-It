@@ -18,16 +18,16 @@ public class ParticipationResponse {
     private String username;
     private String message;
     private ParticipationStates state;
-    private String studyName;
+    private String studyTitle;
     private Long studyId;
     public ParticipationResponse(Participation participation, Long id){
         this.participationId = participation.getId();
-        this.username = participation.getUser().getUsername();
+        this.username = participation.getUser().getName();
         this.userId = id;
         this.message = participation.getMessage();
         this.state = participation.getState();
         this.studyId = participation.getStudy().getId();
-        this.studyName = participation.getStudy().getTitle();
+        this.studyTitle = participation.getStudy().getTitle();
 
     }
     @Builder
@@ -37,7 +37,7 @@ public class ParticipationResponse {
         this.username = userName;
         this.message = message;
         this.state = state;
-        this.studyName = studyName;
+        this.studyTitle = studyName;
         this.studyId = studyId;
     }
 

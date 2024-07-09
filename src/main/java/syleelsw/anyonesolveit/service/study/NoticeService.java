@@ -49,6 +49,7 @@ public class NoticeService {
         noticeRepository.deleteById(id);
     }
 
+    @Transactional
     public void deleteAllByStudy(Study study) {
         noticeRepository.deleteAllByStudy(study);
     }

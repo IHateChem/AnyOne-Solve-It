@@ -34,7 +34,7 @@ public class NoticeDto {
                 .noticeType(notice.getNoticeType())
                 .studyId(notice.getStudy().getId())
                 .title(notice.getStudy().getTitle())
-                .username(notice.getUser() == null ? null : notice.getUser().getUsername())
+                .username(notice.getUser() == null ? null : notice.getUser().getName())
                 .userId(notice.getUser() == null ? null : notice.getUser().getId())
                 .noticeTime(notice.getModifiedDateTime())
                 .build();

@@ -27,10 +27,13 @@ import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.NoticeService;
 import syleelsw.anyonesolveit.service.user.dto.RankAndSolvedProblem;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
+import syleelsw.anyonesolveit.service.validation.dto.ValidateResponse;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+
+import static syleelsw.anyonesolveit.etc.StaticValidator.isValidArea;
 
 @Service @RequiredArgsConstructor @Slf4j
 public class UserService {
@@ -42,16 +45,27 @@ public class UserService {
     private final StudyRepository studyRepository;
     private final NoticeRepository noticeRepository;
     private final NoticeService noticeService;
-    @Qualifier("threadPoolTaskExecutor")
+    @Qualifier("taskExecutor")
     private final Executor executor;
+
+    public ResponseEntity searchUserByBjId(String bjId) {
+        Optional<Long> idByBjName = userRepository.findIdByBjName(bjId);
+        if(idByBjName.isEmpty()) {
+            return new ResponseEntity( Map.of("userId", -1) , HttpStatus.OK);
+        }else{
+            return new ResponseEntity( Map.of("userId", idByBjName.get()) , HttpStatus.OK);
+        }
+    }
 
 
     class Job implements Runnable{
         String url;
         Set set;
-        public Job(String url, Set set){
+        CountDownLatch latch;
+        public Job(String url, Set set, CountDownLatch latch){
             this.url = url;
             this.set = set;
+            this.latch = latch;
         }
         @Override
         public void run() {
@@ -64,6 +78,8 @@ public class UserService {
 
             }catch (Exception e){
                 e.printStackTrace();
+            }finally {
+                latch.countDown();
             }
 
         }
@@ -84,9 +100,13 @@ public class UserService {
     public ResponseEntity validBJAndUpdateUser(UserProfileDto userProfile, UserInfo user) {
         try{
             RankAndSolvedProblem rankAndProblems = getRankAndSolveProblem(userProfile.getBjname());
+            if(!isValidArea(userProfile.getArea().toString() + " " + userProfile.getCity())){
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
             Integer rank = rankAndProblems.rank;
             SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
             user.update(rank, solvedProblem, userProfile);
+            log.info("업데이트 저장: {}", user);
             userRepository.save(user);
         }catch (IllegalStateException e){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -122,21 +142,29 @@ public class UserService {
         Long solvedCount = bjUserInfo.getBody().getSolvedCount();
         log.info("SolvedProblem: {}", solvedCount);
 
-        Set<Integer> problemSet = Collections.synchronizedSet( new HashSet<>());
-        int pageCount = (int) (solvedCount / 50) + 1;
+        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
 
-        List<Future<Set<Integer>>> futures = new ArrayList<>();
+        int pageCount = (int) (solvedCount / 50) + 1;
+        CountDownLatch latch = new CountDownLatch(pageCount);
 
         for (int i = 0; i < pageCount; i++) {
             String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
-            Job task = new Job(url, problemSet);
+            Job task = new Job(url, problemSet, latch);
             executor.execute(task);
         }
-        log.info("problemSet: {}", problemSet.size());
-        return SolvedProblemDto.builder()
-                .solvedProblems(problemSet.stream().toList())
-                .solved(user_level_problem)
-                .build();
+
+        try {
+            latch.await(); // 모든 작업이 완료될 때까지 대기
+            log.info("쓰레드 작업 완료");
+            return SolvedProblemDto.builder()
+                    .solvedProblems(problemSet.stream().toList())
+                    .solved(user_level_problem)
+                    .build();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Tasks interrupted");
+        }
+        throw new RuntimeException();
     }
 
     public ResponseEntity getMyApply(String access) {
@@ -179,6 +207,9 @@ public class UserService {
         if(!validationService.isValidateBJId(myPage.getBjname())){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+        if(!isValidArea(myPage.getArea()+ " "+myPage.getCity())){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
         user.setFirst(false);
         setUserInformation(user, myPage);
         log.info("user: {}", user);
@@ -192,6 +223,9 @@ public class UserService {
         if(!validationService.isValidateBJId(bjname)){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+        if(!isValidArea(myPage.getArea()+ " "+myPage.getCity())){
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
 
         //update bjInfo
         ResponseEntity<SolvedacUserInfoDto> response = validationService.getSolvedacUserInfoDtoResponseEntity(bjname);
@@ -203,9 +237,11 @@ public class UserService {
     }
 
     private void setUserInformation(UserInfo user, MyPageDto myPage) {
-        String[] split = myPage.getArea().split(" ");
-        user.setArea(Locations.valueOf(split[0]));
-        user.setCity(split[1]);
+        //String[] split = myPage.getArea().split(" ");
+        //user.setArea(Locations.valueOf(split[0]));
+        // user.setCity(split[1]);
+        user.setArea(Locations.valueOf(myPage.getArea()));
+        user.setCity(myPage.getCity());
         user.setBjname(myPage.getBjname());
         user.setLanguage(myPage.getLanguage());
         user.setPrefer_type(myPage.getPrefer_type());
@@ -236,22 +272,35 @@ public class UserService {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Notice> byId = noticeService.findById(id);
+        log.info("del info: {}", byId.get().toString());
         if(byId.isEmpty() || !byId.get().getToUser().equals(user)) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         noticeService.delById(id);
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    public ResponseEntity searchUser(String userId) {
-        List<String> userInfos = userRepository.searchByEmail(userId);
-        return new ResponseEntity(Map.of("results", userInfos), HttpStatus.OK);
+    public ResponseEntity searchUser(String email) {
+        Optional<UserInfo> userByEmail = userRepository.findUserByEmail(email);
+        if(userByEmail.isEmpty()){
+            return new ResponseEntity(ValidateResponse.builder()
+                    .valid(false).build(),HttpStatus.OK);
+        }else{
+
+            return new ResponseEntity(ValidateResponse.builder()
+                    .valid(true)
+                    .userId(userByEmail.get().getId())
+                    .bjname(userByEmail.get().getBjname())
+                    .username(userByEmail.get().getName())
+                    .build(), HttpStatus.OK);
+        }
     }
 
     public ResponseEntity getInformation(String access) {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
-        String username = user.getUsername();
+        String username = user.getName();
         String picture = user.getPicture();
         String email = user.getEmail();
-        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst()), HttpStatus.OK);
+        int notices = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user).get().size();
+        return new ResponseEntity<>(Map.of("username", username, "imageUrl", picture, "email", email, "isFirst", user.isFirst(), "notices" , notices), HttpStatus.OK);
     }
 }

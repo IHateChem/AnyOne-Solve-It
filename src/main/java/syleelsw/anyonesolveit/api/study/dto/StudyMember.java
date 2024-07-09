@@ -18,6 +18,6 @@ public class StudyMember {
         this.username = username;
     }
     public static StudyMember fromUserInfo(UserInfo userInfo){
-        return builder().userId(userInfo.getId()).email(userInfo.getEmail()).username(userInfo.getUsername()).build();
+        return builder().userId(userInfo.getId()).email(userInfo.getEmail()).username(userInfo.getName()).build();
     }
 }
