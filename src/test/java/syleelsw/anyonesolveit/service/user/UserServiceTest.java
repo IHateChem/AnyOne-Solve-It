@@ -44,7 +44,7 @@ class UserServiceTest {
                 .area(Locations.ALL)
                 .email("s@a.com")
                 .isFirst(true)
-                .languages(List.of(LanguageTypes.Java))
+                .language(LanguageTypes.Java)
                 .prefer_type("온라인")
                 .build();
     }
@@ -185,6 +185,9 @@ class UserServiceTest {
         //given
         UserProfileDto inValidUser = userProfileDto("syleelsw123");
         UserProfileDto validUser = userProfileDto("syleelsw");
+
+        UserInfo user1 = mkUserInfo(true, "syleelsw");
+        UserInfo savedUser1 = userRepository.save(user1);
         //when
 
         ResponseEntity responseEntity = userService.setProfile(jwt, inValidUser);
