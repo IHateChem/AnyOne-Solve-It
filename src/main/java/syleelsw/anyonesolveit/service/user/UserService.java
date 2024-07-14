@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.*;
@@ -114,7 +115,6 @@ public class UserService {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-
     public RankAndSolvedProblem getRankAndSolveProblem(String bjName){
         Integer rank = validationService.isValidateBJIdAndGetRank(bjName);
         if(rank==null){
@@ -141,12 +141,15 @@ public class UserService {
         ResponseEntity<SolvedacUserInfoDto> bjUserInfo = restTemplate.getForEntity(solved_dac_url+ "/user/show?handle=" + username, SolvedacUserInfoDto.class);
         Long solvedCount = bjUserInfo.getBody().getSolvedCount();
         log.info("SolvedProblem: {}", solvedCount);
+        // 걸리는 시간을 알아보기 위해 Timer를 추가한다.
+
 
         Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
 
         int pageCount = (int) (solvedCount / 50) + 1;
         CountDownLatch latch = new CountDownLatch(pageCount);
 
+        long startTime = System.nanoTime();
         for (int i = 0; i < pageCount; i++) {
             String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
             Job task = new Job(url, problemSet, latch);
@@ -155,7 +158,8 @@ public class UserService {
 
         try {
             latch.await(); // 모든 작업이 완료될 때까지 대기
-            log.info("쓰레드 작업 완료");
+            long endTime = System.nanoTime();
+            log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000_000 );
             return SolvedProblemDto.builder()
                     .solvedProblems(problemSet.stream().toList())
                     .solved(user_level_problem)
