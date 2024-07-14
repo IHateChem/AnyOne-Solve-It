@@ -26,4 +26,8 @@ public interface NoticeRepository  extends JpaRepository<Notice, Long> {
     @Modifying
     @Query(value = "DELETE FROM Notice n WHERE n.study = :study")
     void deleteAllByStudy(@Param("study") Study study);
+
+    @Modifying
+    @Query(value="DELETE FROM Notice n WHERE n.toUser = :user or n.user = :user")
+    void deleteAllByUserAndToUser(UserInfo user);
 }

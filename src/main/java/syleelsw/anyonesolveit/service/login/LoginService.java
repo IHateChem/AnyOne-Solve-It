@@ -265,18 +265,11 @@ public class LoginService {
         }
 
         participationRepository.deleteAllByUser(user);
-        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
-        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
-            allByToUserOrderByModifiedDateTimeDesc.get().stream()
-                    .forEach(n -> {
-                        noticeRepository.delete(n);
-                    });
-        }
+        noticeRepository.deleteAllByUserAndToUser(user);
         //탈퇴처리를 한다.
         studiesByMember.stream().forEach(study ->{
             if(study.getMembers().size() == 1){
                 studyProblemRepository.deleteAllByStudy(study);
-                noticeRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }else{
                 study.getMembers().remove(user);

@@ -15,5 +15,6 @@ public interface ParticipationRepository  extends JpaRepository<Participation, S
     @Query(value = "select p from Participation p where (p.study.user = :user) order by p.modifiedDateTime DESC")
     Optional<List<Participation>> findMyParticipationsByUser(UserInfo user);
 
+    @Query(value = "DELETE from Participation p where (p.user = :user)")
     void deleteAllByUser(UserInfo user);
 }
