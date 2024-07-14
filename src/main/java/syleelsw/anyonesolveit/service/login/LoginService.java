@@ -92,8 +92,10 @@ public class LoginService {
 
 
     public ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
-        UserInfo userInfo = userRepository.findUserByEmail(email).get();
-        if(userInfo == null) { userInfo = join(email, username, provider, picture);}
+        Optional<UserInfo> OptionalUserInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = null;
+        if(OptionalUserInfo.isEmpty()) { userInfo = join(email, username, provider, picture);}
+        else{ userInfo = OptionalUserInfo.get();}
         if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
         if(userInfo.getBjname()!=null){
             RankAndSolvedProblem rankAndSolveProblem = userService.getRankAndSolveProblem(userInfo.getBjname());
