@@ -264,6 +264,14 @@ public class LoginService {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
 
+        participationRepository.deleteAllByUser(user);
+        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
+        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
+            allByToUserOrderByModifiedDateTimeDesc.get().stream()
+                    .forEach(n -> {
+                        noticeRepository.delete(n);
+                    });
+        }
         //탈퇴처리를 한다.
         studiesByMember.stream().forEach(study ->{
             if(study.getMembers().size() == 1){
@@ -275,14 +283,6 @@ public class LoginService {
                 studyRepository.save(study);
             }
         });
-        participationRepository.deleteAllByUser(user);
-        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
-        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
-            allByToUserOrderByModifiedDateTimeDesc.get().stream()
-                    .forEach(n -> {
-                        noticeRepository.delete(n);
-                    });
-        }
         userRepository.delete(user);
         return new ResponseEntity(HttpStatus.OK);
     }
