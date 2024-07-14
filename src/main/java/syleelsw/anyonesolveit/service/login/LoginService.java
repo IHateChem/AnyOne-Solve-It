@@ -15,6 +15,8 @@ import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.study.Notice;
 import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
+import syleelsw.anyonesolveit.domain.study.Repository.StudyProblemRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
@@ -43,6 +45,8 @@ public class LoginService {
     private final NoticeRepository noticeRepository;
     private final StudyRepository studyRepository;
     private final UserService userService;
+    private final StudyProblemRepository studyProblemRepository;
+    private final ParticipationRepository participationRepository;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
     @Value("${spring.kakao.client_id}")
@@ -261,14 +265,17 @@ public class LoginService {
         }
 
         //탈퇴처리를 한다.
-        studiesByMember.stream().forEach( study ->{
+        studiesByMember.stream().forEach(study ->{
             if(study.getMembers().size() == 1){
+                studyProblemRepository.deleteAllByStudy(study);
+                noticeRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }else{
                 study.getMembers().remove(user);
                 studyRepository.save(study);
             }
         });
+        participationRepository.deleteAllByUser(user);
         Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
         if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
             allByToUserOrderByModifiedDateTimeDesc.get().stream()
