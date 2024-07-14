@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
@@ -71,7 +72,6 @@ public class ValidationService {
         log.info("{}", response);
         return response;
     }
-
 
     private Integer getUserRankFromAPI(String bjName){
         BaekjoonInformation baekjoonInformation = baekjoonInformationRepository.findById(bjName).get();

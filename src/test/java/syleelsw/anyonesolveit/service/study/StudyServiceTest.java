@@ -475,8 +475,8 @@ class StudyServiceTest {
         ResponseEntity<List<StudyProblemResponse>> suggestion = studyService.getSuggestion(response.getBody().getId());
 
         //then
-        assertThat(valid_response1.getBody().getProblemId()).isEqualTo(1000);
-        assertThat(valid_response2.getBody().getProblemId()).isEqualTo(1000);
+        assertThat(valid_response1.getBody().getProbNum()).isEqualTo(1000);
+        assertThat(valid_response2.getBody().getProbNum()).isEqualTo(1000);
         assertThat(suggestion.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(suggestion.getBody().size()).isEqualTo(10);
         assertThat(suggestion.getBody().stream().map(t-> t.getProbNum()).collect(Collectors.toList())).isSorted();
