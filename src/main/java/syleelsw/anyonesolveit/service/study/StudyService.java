@@ -401,6 +401,8 @@ public class StudyService {
         if(study.getUser().equals(user)){
             // 스터디원이 한명밖에 없는경우
             if(study.getMembers().size()==1) {
+                studyProblemRepository.deleteAllByStudy(study);
+                noticeRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }
             return getGoodResponse(Map.of("isManager", true));
