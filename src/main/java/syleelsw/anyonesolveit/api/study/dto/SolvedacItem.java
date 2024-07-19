@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter @ToString
 public class SolvedacItem {
-    private Integer problemId;
+    private Long problemId;
     private String titleKo;
     private Integer level;
     private List<SolvedTag> tags;

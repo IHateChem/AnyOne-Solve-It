@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.domain.study.*;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
@@ -479,6 +480,25 @@ public class StudyService {
         Study study = studyOptional.get();
         study.setRecruiting(recruiting);
         studyRepository.save(study);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity postOtherStudyProblem(Long id, OtherProblemDTO problemDTO) {
+        Long problemId = problemRepository.findTopByOrderByIdDesc();
+        Problem problem = Problem.builder()
+                .problemId(problemId+1)
+                .title(problemDTO.getTitle())
+                .types(problemDTO.getTypes())
+                .link(problemDTO.getLink())
+                .rank(problemDTO.getRank())
+                .build();
+        problemRepository.save(problem);
+        StudyProblemEntity studyProblemEntity = StudyProblemEntity.builder()
+                .id(id +"_"+problem.getId())
+                .problem(problem)
+                .study(studyRepository.findById(id).get()).build();
+        studyProblemRepository.save(studyProblemEntity);
         return new ResponseEntity(HttpStatus.OK);
     }
 }

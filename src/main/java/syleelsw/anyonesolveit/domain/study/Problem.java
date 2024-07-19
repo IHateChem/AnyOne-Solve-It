@@ -2,6 +2,7 @@ package syleelsw.anyonesolveit.domain.study;
 
 import jakarta.persistence.*;
 import lombok.*;
+import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.ProblemResponse;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Problem{
     @Id
-    private Integer id;
+    private Long id;
     private String title;
 
     @ElementCollection(fetch = FetchType.LAZY)
@@ -21,7 +22,7 @@ public class Problem{
     private String link;
     private Integer rank;
     @Builder
-    public Problem(Integer problemId, String title, List<String> types, String link, Integer rank) {
+    public Problem(Long problemId, String title, List<String> types, String link, Integer rank) {
         this.title = title;
         this.id = problemId;
         this.types = types;

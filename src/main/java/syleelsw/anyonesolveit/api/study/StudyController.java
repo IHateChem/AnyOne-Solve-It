@@ -1,12 +1,16 @@
 package syleelsw.anyonesolveit.api.study;
 
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.aops.IgnoreValidation;
+import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
@@ -51,6 +55,11 @@ public class StudyController {
     @DeleteMapping("/studies/{id}/suggestions")
     public ResponseEntity delAllSuggestion(@RequestHeader String Access, @PathVariable Long id){
         return studyService.delAllSuggestion(Access, id);
+    }
+
+    @PostMapping("/studies/{id}/suggestion/other")
+    public ResponseEntity postOtherStudyProblem(@RequestHeader String Access, @PathVariable Long id,@RequestBody OtherProblemDTO problemDTO){
+        return studyService.postOtherStudyProblem(id, problemDTO);
     }
 
     @PostMapping("/studies/{id}/suggestion/{problem}")

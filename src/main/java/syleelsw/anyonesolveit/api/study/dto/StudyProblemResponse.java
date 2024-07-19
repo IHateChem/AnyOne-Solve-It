@@ -11,13 +11,13 @@ import java.util.List;
 
 @Getter @Setter
 public class StudyProblemResponse {
-    private Integer probNum;
+    private long probNum;
     private String title;
     private List<String> types;
     private String link;
     private Integer rank;
     @Builder
-    public StudyProblemResponse(Integer id, String title, List<String> types, String link, Integer rank) {
+    public StudyProblemResponse(Long id, String title, List<String> types, String link, Integer rank) {
         this.probNum = id;
         this.title = title;
         this.types = types;
