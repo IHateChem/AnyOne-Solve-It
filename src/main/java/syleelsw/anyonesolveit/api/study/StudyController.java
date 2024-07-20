@@ -57,7 +57,7 @@ public class StudyController {
         return studyService.delAllSuggestion(Access, id);
     }
 
-    @PostMapping("/studies/{id}/suggestion/other")
+    @PostMapping("/studies/{id}/other/suggestion")
     public ResponseEntity postOtherStudyProblem(@RequestHeader String Access, @PathVariable Long id,@RequestBody OtherProblemDTO problemDTO){
         return studyService.postOtherStudyProblem(id, problemDTO);
     }
