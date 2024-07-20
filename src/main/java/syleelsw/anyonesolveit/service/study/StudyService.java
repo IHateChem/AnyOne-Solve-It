@@ -485,7 +485,7 @@ public class StudyService {
 
     @Transactional
     public ResponseEntity postOtherStudyProblem(Long id, OtherProblemDTO problemDTO) {
-        Long problemId = problemRepository.findTopByOrderByIdDesc();
+        Long problemId = problemRepository.findTop1ByIdDesc();
         Problem problem = Problem.builder()
                 .problemId(problemId+1)
                 .title(problemDTO.getTitle())
