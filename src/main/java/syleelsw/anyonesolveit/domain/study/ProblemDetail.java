@@ -20,7 +20,8 @@ public class ProblemDetail {
     @OneToMany(fetch = FetchType.LAZY)
     private List<ProblemCode> problemCodes;
     @Builder
-    public ProblemDetail(Long problemNumber, List<ProblemCode> problemCodes) {
+    public ProblemDetail(Long problemNumber,Study study, List<ProblemCode> problemCodes) {
+        this.study = study;
         this.problemNumber = problemNumber;
         this.problemCodes = problemCodes;
     }

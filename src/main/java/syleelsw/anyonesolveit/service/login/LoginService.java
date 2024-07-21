@@ -14,10 +14,8 @@ import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.study.Notice;
-import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.ParticipationRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.StudyProblemRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.ProblemDetail;
+import syleelsw.anyonesolveit.domain.study.Repository.*;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
@@ -47,6 +45,8 @@ public class LoginService {
     private final UserService userService;
     private final StudyProblemRepository studyProblemRepository;
     private final ParticipationRepository participationRepository;
+    private final ProblemDetailRepository problemDetailRepository;
+    private final ProblemCodeRepository problemCodeRepository;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
     @Value("${spring.kakao.client_id}")
@@ -273,6 +273,9 @@ public class LoginService {
         //탈퇴처리를 한다.
         studiesByMember.stream().forEach(study ->{
             if(study.getMembers().size() == 1){
+                List<ProblemDetail> allByStudy = problemDetailRepository.findAllByStudy(study);
+                allByStudy.forEach( pd -> problemCodeRepository.deleteAll(pd.getProblemCodes()));
+                problemDetailRepository.deleteAllByStudy(study);
                 studyProblemRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }else{

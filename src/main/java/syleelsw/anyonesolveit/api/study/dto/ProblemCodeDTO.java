@@ -14,6 +14,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 public class ProblemCodeDTO {
+    private Long id;
     private String name;
     private String code;
 }

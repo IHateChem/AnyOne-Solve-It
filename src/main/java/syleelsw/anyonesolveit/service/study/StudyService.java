@@ -406,6 +406,9 @@ public class StudyService {
         if(study.getUser().equals(user)){
             // 스터디원이 한명밖에 없는경우
             if(study.getMembers().size()==1) {
+                List<ProblemDetail> allByStudy = problemDetailRepository.findAllByStudy(study);
+                allByStudy.forEach( pd -> problemCodeRepository.deleteAll(pd.getProblemCodes()));
+                problemDetailRepository.deleteAllByStudy(study);
                 studyProblemRepository.deleteAllByStudy(study);
                 noticeRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
@@ -519,6 +522,7 @@ public class StudyService {
             List<ProblemCode> problemCodes = problemCodeRepository.saveAll(problemCodeList);
             problemDetail = ProblemDetail.builder()
                     .problemNumber(problem)
+                    .study(study)
                     .problemCodes(problemCodes)
                     .build();
             problemDetailRepository.save(problemDetail);
@@ -537,48 +541,50 @@ public class StudyService {
         if(byStudyAndProblemId.isEmpty()){
             return getBadResponse();
         }
-        ProblemDetail problemDetail = byStudyAndProblemId.get();
-        List<ProblemCode> problemCodes = problemDetail.getProblemCodes();
-        problemCodes.add(ProblemCode.builder()
+        ProblemCode newProblemCode = ProblemCode.builder()
                 .name(problemCode.getName())
                 .code(problemCode.getCode())
-                .build());
-        problemDetail.setProblemCodes(problemCodes);
+                .build();
+        ProblemCode savedCode = problemCodeRepository.save(newProblemCode);
+        ProblemDetail problemDetail = byStudyAndProblemId.get();
+        problemDetail.getProblemCodes().add(savedCode);
         problemDetailRepository.save(problemDetail);
-        return new ResponseEntity(HttpStatus.OK);
+        return new ResponseEntity(Map.of("id", savedCode.getId()), HttpStatus.OK);
     }
 
     @Transactional
     public ResponseEntity putProblemCode(Long id, Long problem, ProblemCodeDTO problemCode) {
         Study study = studyRepository.findById(id).get();
         Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
-        if(byStudyAndProblemId.isEmpty()){
+
+        Optional<ProblemCode> optionalProblemCode = problemCodeRepository.findById(problemCode.getId());
+        if (byStudyAndProblemId.isEmpty() || optionalProblemCode.isEmpty()) {
             return getBadResponse();
         }
+        ProblemCode problemCode1 = optionalProblemCode.get();
+
         ProblemDetail problemDetail = byStudyAndProblemId.get();
-        List<ProblemCode> problemCodes = problemDetail.getProblemCodes();
-        for (ProblemCode code : problemCodes) {
-            if(code.getName().equals(problemCode.getName())){
-                code.setCode(problemCode.getCode());
-            }
+        // problemDetail에 problemCode.getId()가 없으면 400
+        if (!problemDetail.getProblemCodes().contains(optionalProblemCode.get())) {
+            return getBadResponse();
         }
-        problemDetail.setProblemCodes(problemCodes);
-        problemDetailRepository.save(problemDetail);
-        return new ResponseEntity(HttpStatus.OK);
+        problemCode1.setCode(problemCode.getCode());
+        problemCodeRepository.save(problemCode1);
+        return getGoodResponse();
     }
 
     @Transactional
-    public ResponseEntity delProblemCode(Long id, Long problem, String name) {
+    public ResponseEntity delProblemCode(Long id, Long problem, Long codeId) {
         Study study = studyRepository.findById(id).get();
         Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
-        if(byStudyAndProblemId.isEmpty()){
+        Optional<ProblemCode> optionalProblemCode = problemCodeRepository.findById(codeId);
+        if (byStudyAndProblemId.isEmpty() || optionalProblemCode.isEmpty()) {
             return getBadResponse();
         }
         ProblemDetail problemDetail = byStudyAndProblemId.get();
-        List<ProblemCode> problemCodes = problemDetail.getProblemCodes();
-        problemCodes.removeIf(code -> code.getName().equals(name));
-        problemDetail.setProblemCodes(problemCodes);
+        problemDetail.getProblemCodes().remove(optionalProblemCode.get());
         problemDetailRepository.save(problemDetail);
+        problemCodeRepository.delete(optionalProblemCode.get());
         return new ResponseEntity(HttpStatus.OK);
     }
 }

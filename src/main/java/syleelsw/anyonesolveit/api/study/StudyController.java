@@ -126,7 +126,7 @@ public class StudyController {
     }
 
     @DeleteMapping("/studies/{id}/problems/{problem}")
-    public ResponseEntity delProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestParam String name){
-        return studyService.delProblemCode(id, problem, name);
+    public ResponseEntity delProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestParam Long codeId){
+        return studyService.delProblemCode(id, problem, codeId);
     }
 }
