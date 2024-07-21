@@ -69,9 +69,11 @@ public class LoginService {
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
             log.info("jwtHeaders: {}", jwtHeaders);
+            // 짧은시간 2회 요청 대비용
             refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
+            // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
                 return new ResponseEntity<>(tokenValidationService.makeJwtHeaders(byId.get().getAccess(), byId.get().getNewRefresh()), HttpStatus.OK);
