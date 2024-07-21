@@ -13,7 +13,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProblemCode extends BaseEntity {
-    @Id  @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id  @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
     private String code;
