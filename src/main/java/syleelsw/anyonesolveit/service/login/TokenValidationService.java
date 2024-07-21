@@ -150,6 +150,7 @@ public class TokenValidationService {
         Optional<RefreshEntity> refreshEntity = refreshRedisRepository.findById(key);
         if(refreshEntity.isPresent()){
             log.info("Refresh Token data... {}", refreshEntity.get());
+            log.info("jwt: {}", jwt);
             RefreshEntity data = refreshEntity.get();
             log.info("data.getExpired: {}", data.getExpired());
             log.info("cur time: {}",System.currentTimeMillis());
