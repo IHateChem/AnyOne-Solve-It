@@ -107,4 +107,26 @@ public class StudyController {
         return studyService.confirmParticipation(Access, participationId, confirm);
     }
 
+
+
+    @GetMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity getProblemDetail(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem){
+        return studyService.getProblemDetail(id, problem);
+    }
+
+
+    @PostMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity postProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestBody ProblemCodeDTO problemCode){
+        return studyService.postProblemCode(id, problem, problemCode);
+    }
+
+    @PutMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity putProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestBody ProblemCodeDTO problemCode){
+        return studyService.putProblemCode(id, problem, problemCode);
+    }
+
+    @DeleteMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity delProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestParam String name){
+        return studyService.delProblemCode(id, problem, name);
+    }
 }
