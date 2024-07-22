@@ -13,6 +13,9 @@ import org.springframework.util.StopWatch;
 import org.springframework.validation.BindingResult;
 import syleelsw.anyonesolveit.api.login.dto.LoginBody;
 import syleelsw.anyonesolveit.api.login.dto.UpdateTokenRequest;
+import syleelsw.anyonesolveit.domain.login.RefreshCnt;
+import syleelsw.anyonesolveit.domain.login.RefreshShort;
+import syleelsw.anyonesolveit.domain.login.Respository.RefreshCntRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
@@ -27,6 +30,8 @@ public class ControllerAdvice {
     private final JwtTokenProvider jwtTokenProvider;
     private final StudyRepository studyRepository;
     private final RefreshRedisRepository refreshRedisRepository;
+    private final RefreshShortRedisRepository refreshShortRedisRepository;
+    private final RefreshCntRedisRepository refreshCntRedisRepository;
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allService() &&  args(loginBody, bindingResult)")
     public ResponseEntity validator(ProceedingJoinPoint joinPoint, LoginBody loginBody,  BindingResult bindingResult) throws Throwable {
         log.info("validation AOP");
@@ -39,6 +44,18 @@ public class ControllerAdvice {
     @Around("@annotation(RefreshTokenValidation) && args(updateTokenDto)")
     public Object doFilterRefresh(ProceedingJoinPoint joinPoint, UpdateTokenRequest updateTokenDto) throws Throwable {
         String jwt = updateTokenDto.getRefresh();
+        Optional<RefreshCnt> byId = refreshCntRedisRepository.findById(jwt);
+        RefreshCnt refreshCnt;
+        if(byId.isPresent()){
+            refreshCnt = byId.get();
+        }else{
+            refreshCnt = new RefreshCnt(jwt, 0);
+        }
+        refreshCnt.addCnt();
+        if(refreshCnt.getCnt()>5){
+            return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
+        }
+        refreshCntRedisRepository.save(refreshCnt);
         if(jwtTokenProvider.validateToken(jwt)){
             return joinPoint.proceed();
         }else{
