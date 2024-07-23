@@ -16,6 +16,7 @@ public class ProblemCode extends BaseEntity {
     @Id  @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
+    @Column(columnDefinition = "LONGTEXT")
     private String code;
     @Builder
     public ProblemCode(String name, String code) {
