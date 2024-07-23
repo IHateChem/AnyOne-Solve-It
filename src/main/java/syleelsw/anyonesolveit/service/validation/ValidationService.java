@@ -52,10 +52,8 @@ public class ValidationService {
             return true;
         }catch (HttpClientErrorException.NotFound notFound){
             return false;
-        }catch(HttpClientErrorException.Forbidden forbidden) {
-            return false;
         }catch (HttpClientErrorException otherError){
-            throw new IllegalStateException("SolvedDac 서버 확인하세요");
+            return false;
         }
     }
 
