@@ -44,12 +44,15 @@ public class ValidationService {
 
         try{
             log.info("Solvedac에 요청 보내는중... Id : {}", bjId);
+
             ResponseEntity<SolvedacUserInfoDto> response = getSolvedacUserInfoDtoResponseEntity(bjId);
             BaekjoonInformation myBjInfo = BaekjoonInformation.builder().bjname(bjId).rank(response.getBody().getRank()).solved(response.getBody().getSolvedCount()).build();
 
             baekjoonInformationRepository.save(myBjInfo);
             return true;
         }catch (HttpClientErrorException.NotFound notFound){
+            return false;
+        }catch(HttpClientErrorException.Forbidden forbidden) {
             return false;
         }catch (HttpClientErrorException otherError){
             throw new IllegalStateException("SolvedDac 서버 확인하세요");
