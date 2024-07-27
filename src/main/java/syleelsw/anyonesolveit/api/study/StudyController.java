@@ -140,4 +140,9 @@ public class StudyController {
     public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id, @RequestParam String query, @RequestParam Boolean notSolved){
         return studyService.searchProblem(id, query, notSolved);
     }
+
+    @GetMapping("/search/tags")
+    public ResponseEntity searchTag(@RequestHeader String Access, @RequestParam String query){
+        return studyService.searchTag(query);
+    }
 }

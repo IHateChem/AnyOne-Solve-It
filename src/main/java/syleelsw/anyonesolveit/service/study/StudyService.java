@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.min;
+import static syleelsw.anyonesolveit.etc.StudyUpdater.tagTrie;
 
 @Service @Slf4j @RequiredArgsConstructor
 public class StudyService {
@@ -609,5 +610,9 @@ public class StudyService {
         if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
         return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
 
+    }
+
+    public ResponseEntity searchTag(String tag){
+        return new ResponseEntity(Map.of("tags", tagTrie.search(tag)), HttpStatus.OK);
     }
 }

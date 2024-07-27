@@ -17,10 +17,13 @@ import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.study.ProblemTag;
+import syleelsw.anyonesolveit.domain.study.Repository.ProblemTagRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
+import syleelsw.anyonesolveit.service.study.TagTrie;
 import syleelsw.anyonesolveit.service.study.tools.ProblemTagsUpdator;
 import syleelsw.anyonesolveit.service.user.UserService;
 
@@ -36,11 +39,18 @@ public class StudyUpdater {
     @Qualifier("taskExecutor")
     private final Executor executor;
     private final ProblemTagsUpdator problemTagsUpdator;
+    private final ProblemTagRepository problemTagRepository;
+    public static final TagTrie tagTrie = new TagTrie();
 
     @PostConstruct
     public void init() {
         log.info("Update Tags on startup...");
         problemTagsUpdator.update();
+        List<ProblemTag> tags = problemTagRepository.findAll();
+        for(ProblemTag tag: tags){
+            tagTrie.insert(tag.getProblemKey(), tag.getProblemCount());
+        }
+
     }
     @Scheduled(cron = "0 0 0 * * *")
     public void updateTags(){
