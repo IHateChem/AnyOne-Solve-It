@@ -135,8 +135,9 @@ public class StudyController {
         return studyService.getTags();
     }
 
-    @PostMapping("/studies/{id}/problem/search")
-    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,  @RequestBody ProblemSearchDTO problemSearchDTO){
-        return studyService.searchProblem(id, problemSearchDTO);
+
+    @GetMapping("/studies/{id}/problem/search")
+    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id, @RequestParam String query, @RequestParam Boolean notSolved){
+        return studyService.searchProblem(id, query, notSolved);
     }
 }

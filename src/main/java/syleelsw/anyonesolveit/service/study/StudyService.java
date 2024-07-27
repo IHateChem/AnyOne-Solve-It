@@ -595,15 +595,15 @@ public class StudyService {
     }
 
 
-    public ResponseEntity searchProblem(Long id, ProblemSearchDTO problemSearchDTO) {
+    public ResponseEntity searchProblem(Long id, String query, Boolean notSolved) {
         Study study = studyRepository.findById(id).get();
         String prefix = "";
-        if (problemSearchDTO.isNotSolved()){
+        if (notSolved){
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
             prefix = bjIds.stream().collect(Collectors.joining("+"));
         }
-        log.info("query: {}", prefix +"+"+ problemSearchDTO.getQuery());
-        String url = "https://solved.ac/api/v3/search/problem?query=" + prefix +"+"+ problemSearchDTO.getQuery();
+        log.info("query: {}", prefix +"+"+ query);
+        String url = "https://solved.ac/api/v3/search/problem?query=" + prefix +"+"+ query;
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
         if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
