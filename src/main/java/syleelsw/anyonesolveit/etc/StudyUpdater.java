@@ -105,7 +105,7 @@ public class StudyUpdater {
     public void updateUser(List<UserInfo> users) {
         String solved_dac_url = "https://solved.ac/api/v3";
         CopyOnWriteArrayList<UserInfo> userInfos = new CopyOnWriteArrayList<>();
-        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
+        Set<Long> problemSet = Collections.synchronizedSet(new HashSet<>());
         for (UserInfo user : users) {
             if(user.getModifiedDateTime().isAfter(LocalDateTime.now().minusHours(1))) continue;
             String username = user.getBjname();

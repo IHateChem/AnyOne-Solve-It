@@ -12,7 +12,6 @@ import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.*;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
@@ -147,7 +146,7 @@ public class UserService {
         int pageCount = (int) (solvedCount / 50) + 1;
         CountDownLatch latch = new CountDownLatch(pageCount);
 
-        List<Set<Integer>> problemSetList = new ArrayList<>();
+        List<Set<Long>> problemSetList = new ArrayList<>();
         for (int i = 0; i < pageCount; i++) {
             problemSetList.add(new HashSet<>());
         }
@@ -162,7 +161,7 @@ public class UserService {
         try {
             latch.await(); // 모든 작업이 완료될 때까지 대기
             long endTime = System.nanoTime();
-            List resultList = problemSetList.stream().flatMap(Set::stream).collect(Collectors.toList());
+            List<Long> resultList = problemSetList.stream().flatMap(Set::stream).collect(Collectors.toList());
             log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000 );
             return SolvedProblemDto.builder()
                     .solvedProblems(resultList)

@@ -7,6 +7,6 @@ import java.util.List;
 
 @Builder @Getter
 public class SolvedProblemDto{
-    private List<Integer> solvedProblems;
+    private List<Long> solvedProblems;
     private String solved;
 }

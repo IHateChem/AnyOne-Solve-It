@@ -10,10 +10,10 @@ import java.util.List;
 @NoArgsConstructor
 public class UserSolvedDto {
     private String username;
-    private List<Integer> problems;
+    private List<Long> problems;
     private Integer rank;
     @Builder
-    public UserSolvedDto(String username, List<Integer> problems, Integer rank) {
+    public UserSolvedDto(String username, List<Long> problems, Integer rank) {
         this.username = username;
         this.problems = problems;
         this.rank = rank;
