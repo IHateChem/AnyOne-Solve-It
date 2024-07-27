@@ -70,13 +70,13 @@ public class LoginService {
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
             log.info("jwtHeaders: {}", jwtHeaders);
             // 짧은시간 2회 요청 대비용
-            refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
+            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
             // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
-                return new ResponseEntity<>(tokenValidationService.makeJwtHeaders(byId.get().getAccess(), byId.get().getNewRefresh()), HttpStatus.OK);
+                return new ResponseEntity<>(byId.get(), HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
             return new ResponseEntity(HttpStatus.UNAUTHORIZED);
