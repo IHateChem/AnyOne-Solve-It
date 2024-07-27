@@ -44,22 +44,21 @@ public class ControllerAdvice {
     @Around("@annotation(RefreshTokenValidation) && args(updateTokenDto)")
     public Object doFilterRefresh(ProceedingJoinPoint joinPoint, UpdateTokenRequest updateTokenDto) throws Throwable {
         String jwt = updateTokenDto.getRefresh();
+        Optional<RefreshCnt> byId = refreshCntRedisRepository.findById(jwt);
+        RefreshCnt refreshCnt;
+        if(byId.isPresent()){
+            refreshCnt = byId.get();
+        }else{
+            refreshCnt = new RefreshCnt(jwt, 0);
+        }
+        refreshCnt.addCnt();
+        if(refreshCnt.getCnt()>5){
+            return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
+        }
+        refreshCntRedisRepository.save(refreshCnt);
         if(jwtTokenProvider.validateToken(jwt)){
             return joinPoint.proceed();
         }else{
-
-            Optional<RefreshCnt> byId = refreshCntRedisRepository.findById(jwt);
-            RefreshCnt refreshCnt;
-            if(byId.isPresent()){
-                refreshCnt = byId.get();
-            }else{
-                refreshCnt = new RefreshCnt(jwt, 0);
-            }
-            refreshCnt.addCnt();
-            if(refreshCnt.getCnt()>5){
-                return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
-            }
-            refreshCntRedisRepository.save(refreshCnt);
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
