@@ -84,9 +84,12 @@ public class LoginService {
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByEmail(email).get();
+        log.info("Test Login..., {}", userRepository.findUserByEmail(email));
+        Optional<UserInfo> byEmail = userRepository.findUserByEmail(email);
+        UserInfo userInfo;
         String username = "dltjrdn";
-        if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
+        if(byEmail.isEmpty()) { userInfo = join(email, username, Provider.test, "123");}
+        else {userInfo= byEmail.get();}
         findUserAndJoin(email, username, Provider.test, "");
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);

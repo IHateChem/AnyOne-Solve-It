@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
+import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.*;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
@@ -73,7 +74,7 @@ public class UserService {
             RestTemplate restTemplate = new RestTemplate();
             try{
                 ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-                for (SolvedacPageItem item : response.getBody().getItems()) {
+                for (SolvedacItem item : response.getBody().getItems()) {
                     set.add(item.getProblemId());
                 }
 
@@ -162,7 +163,7 @@ public class UserService {
             latch.await(); // 모든 작업이 완료될 때까지 대기
             long endTime = System.nanoTime();
             List resultList = problemSetList.stream().flatMap(Set::stream).collect(Collectors.toList());
-            log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000_000 );
+            log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000 );
             return SolvedProblemDto.builder()
                     .solvedProblems(resultList)
                     .solved(user_level_problem)

@@ -38,8 +38,8 @@ public class StudyService {
     private final StudyRepository studyRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
-    private final UserStudyJoinRepository userStudyJoinRepository;
     private final ProblemSolvedCountUpdater problemSolvedCountUpdater;
+    private final ProblemTagRepository problemTagRepository;
     private final ProblemRepository problemRepository;
     private final ValidationService validationService;
     private final StudyProblemRepository studyProblemRepository;
@@ -473,12 +473,13 @@ public class StudyService {
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
         boolean isExist = true;
+        Problem problem = null;
         try {
-            problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
+            problem = problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
         }catch(HttpClientErrorException e){
             isExist = false;
         }
-        return new ResponseEntity(SearchProblemDto.of(isExist, study, problemId), HttpStatus.OK);
+        return new ResponseEntity(SearchProblemDto.of(isExist, study, problem), HttpStatus.OK);
     }
 
     public ResponseEntity changeRecruiting(String access, Long id, boolean recruiting) {
@@ -586,5 +587,27 @@ public class StudyService {
         problemDetailRepository.save(problemDetail);
         problemCodeRepository.delete(optionalProblemCode.get());
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public ResponseEntity getTags() {
+        List<ProblemTag> all = problemTagRepository.findAllByOrderByProblemCountDesc();
+        return new ResponseEntity(all.stream().map(tag -> tag.getProblemKey()).collect(Collectors.toList()), HttpStatus.OK);
+    }
+
+
+    public ResponseEntity searchProblem(Long id, ProblemSearchDTO problemSearchDTO) {
+        Study study = studyRepository.findById(id).get();
+        String prefix = "";
+        if (problemSearchDTO.isNotSolved()){
+            List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
+            prefix = bjIds.stream().collect(Collectors.joining("+"));
+        }
+        log.info("query: {}", prefix +"+"+ problemSearchDTO.getQuery());
+        String url = "https://solved.ac/api/v3/search/problem?query=" + prefix +"+"+ problemSearchDTO.getQuery();
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+        if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
+        return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
+
     }
 }

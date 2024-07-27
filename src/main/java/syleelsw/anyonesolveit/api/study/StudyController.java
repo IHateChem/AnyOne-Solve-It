@@ -129,4 +129,14 @@ public class StudyController {
     public ResponseEntity delProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestParam Long codeId){
         return studyService.delProblemCode(id, problem, codeId);
     }
+
+    @GetMapping("/problem/tags")
+    public ResponseEntity getTags(@RequestHeader String Access){
+        return studyService.getTags();
+    }
+
+    @PostMapping("/studies/{id}/problem/search")
+    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,  @RequestBody ProblemSearchDTO problemSearchDTO){
+        return studyService.searchProblem(id, problemSearchDTO);
+    }
 }
