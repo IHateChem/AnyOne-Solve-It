@@ -79,7 +79,7 @@ public class LoginService {
                 return new ResponseEntity<>(tokenValidationService.makeJwtHeaders(byId.get().getAccess(), byId.get().getNewRefresh()), HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
-            return new ResponseEntity(HttpStatus.FORBIDDEN);
+            return new ResponseEntity(HttpStatus.UNAUTHORIZED);
         }
     }
 
