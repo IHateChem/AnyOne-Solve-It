@@ -624,6 +624,7 @@ public class StudyService {
             log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+            log.info("{}", response);
             if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
             Integer count = response.getBody().getCount();
             int problemPerRequest = response.getBody().getItems().size();
