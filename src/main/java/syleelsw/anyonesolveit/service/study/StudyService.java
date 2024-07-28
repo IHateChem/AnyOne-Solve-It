@@ -1,5 +1,7 @@
 package syleelsw.anyonesolveit.service.study;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.domain.study.*;
@@ -25,8 +29,12 @@ import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -597,6 +605,29 @@ public class StudyService {
         return new ResponseEntity(all.stream().map(tag -> tag.getProblemKey()).collect(Collectors.toList()), HttpStatus.OK);
     }
 
+    public SolvedProblemPages requestToSolvedAcSearch(String urlString){
+        try{
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String inputLine;
+            StringBuffer response8 = new StringBuffer();
+
+            while ((inputLine = in.readLine()) != null) {
+                response8.append(inputLine);
+            }
+            in.close();
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return mapper.readValue(response8.toString(), SolvedProblemPages.class);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public ResponseEntity searchProblem(Long id,String range, String minSolved,  String query, Boolean notSolved, List<String> tags, Boolean isRandom) {
         List<ProblemTag> all = problemTagRepository.findAll();
@@ -604,41 +635,32 @@ public class StudyService {
         Study study = studyRepository.findById(id).get();
         String prefix = range;
         if(minSolved != null && !minSolved.equals("")&& !minSolved.equals("0")){
-            prefix += "+" + minSolved;
+            prefix += " " + minSolved;
         }
         if(filtered.size()>0){
-            prefix += "+" + filtered.stream().collect(Collectors.joining("+"));
+            prefix += " " + filtered.stream().collect(Collectors.joining(" "));
         }
         if (notSolved){
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
-            prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
+            prefix += " " + bjIds.stream().collect(Collectors.joining(" "));
         }
         prefix += " ";
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
-
-        try {
-            String url =urlString; // urlString.replaceAll("#", "%23").replaceAll("@", "%40").replaceAll("\\+", "%2B");
-            log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-            if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
-            Integer count = response.getBody().getCount();
-            int problemPerRequest = response.getBody().getItems().size();
-            if (count > 0 && isRandom) {
-                int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
-                url = url +"&page=" + (random+1);
-                response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-                log.info("page: {}", random+1);
-                log.info("{}", response);
-            }
-            return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
-
-        }catch (Exception e){
-            return getBadResponse();
+        SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
+        if(solvedProblemPages == null) return getBadResponse();
+        int count= solvedProblemPages.getCount();
+        int problemPerRequest = solvedProblemPages.getItems().size();
+        if (count > 0 && isRandom) {
+            int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
+            String url = urlString +"&page=" + (random+1);
+            solvedProblemPages = requestToSolvedAcSearch(url);
         }
+        return new ResponseEntity(Map.of("problems",solvedProblemPages.getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
+
     }
 
     public ResponseEntity searchTag(String tag){
         return new ResponseEntity(Map.of("tags", tagTrie.search(tag.toLowerCase())), HttpStatus.OK);
     }
+
 }
