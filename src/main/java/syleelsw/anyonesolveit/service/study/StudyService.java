@@ -629,7 +629,7 @@ public class StudyService {
             int problemPerRequest = response.getBody().getItems().size();
             if (count > 0) {
                 int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
-                url = url +"&page=" + random+1;
+                url = url +"&page=" + (random+1);
                 response = restTemplate.getForEntity(url, SolvedProblemPages.class);
                 log.info("page: {}", random+1);
                 log.info("{}", response);
