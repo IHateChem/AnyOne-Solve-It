@@ -605,8 +605,8 @@ public class StudyService {
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
             prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
         }
-        log.info("query: {}", prefix +"+"+ query);
         String url = "https://solved.ac/api/v3/search/problem?query=" + prefix +"+"+ query;
+        log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
         if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
