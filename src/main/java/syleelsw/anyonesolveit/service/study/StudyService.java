@@ -630,7 +630,7 @@ public class StudyService {
             int problemPerRequest = response.getBody().getItems().size();
             if (count > 0) {
                 int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
-                url = URLEncoder.encode(urlString+"&page=" + random+1, "UTF-8");
+                url = url +"&page=" + random+1;
                 response = restTemplate.getForEntity(url, SolvedProblemPages.class);
             }
             return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
