@@ -14,7 +14,7 @@ import org.springframework.data.redis.core.TimeToLive;
 public class RefreshCnt {
     @Id
     private String refreshToken;
-    private int cnt;
+    private Integer cnt;
     @TimeToLive
     private Long expiration;
     public RefreshCnt(String refreshToken, int cnt){
