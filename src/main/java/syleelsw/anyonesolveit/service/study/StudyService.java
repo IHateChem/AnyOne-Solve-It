@@ -624,7 +624,6 @@ public class StudyService {
             log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-            log.info("{}", response);
             if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
             Integer count = response.getBody().getCount();
             int problemPerRequest = response.getBody().getItems().size();
@@ -632,6 +631,8 @@ public class StudyService {
                 int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
                 url = url +"&page=" + random+1;
                 response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+                log.info("page: {}", random+1);
+                log.info("{}", response);
             }
             return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
 
