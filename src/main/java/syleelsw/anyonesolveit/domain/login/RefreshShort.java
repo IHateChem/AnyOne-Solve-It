@@ -13,11 +13,11 @@ import org.springframework.http.HttpHeaders;
 public class RefreshShort {
     @Id
     private String refreshToken;
-    private HttpHeaders jwtHeaders;
+    private String access;
     @TimeToLive
     private Long expiration;
-    public RefreshShort(String refreshToken,HttpHeaders jwtHeaders){
+    public RefreshShort(String refreshToken,String access){
         this.refreshToken = refreshToken;
-        this.jwtHeaders = jwtHeaders;
+        this.access = access;
     }
 }

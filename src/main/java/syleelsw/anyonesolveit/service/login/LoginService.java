@@ -68,16 +68,20 @@ public class LoginService {
             log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
-            log.info("jwtHeaders: {}", jwtHeaders);
+            log.info("Access {}", jwtHeaders.get("Access").get(0));
             // 짧은시간 2회 요청 대비용
-            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders));
+            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders.get("Access").get(0);
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
             // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
                 log.info("Short Expried Token.., headers: {}", byId.get());
-                return new ResponseEntity<>(byId.get(), HttpStatus.OK);
+                String refresh = byId.get().getRefreshToken();
+                String access = byId.get().getAccess();
+                HttpHeaders headers = tokenValidationService.makeJwtHeaders(access, refresh);
+                log.info("{}", headers);
+                return new ResponseEntity<>(headers, HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
             return new ResponseEntity(HttpStatus.UNAUTHORIZED);
