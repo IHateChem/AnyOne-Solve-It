@@ -623,7 +623,7 @@ public class StudyService {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             return mapper.readValue(response8.toString(), SolvedProblemPages.class);
         }catch (Exception e){
-            e.printStackTrace();
+            log.info("error: {}", e.getMessage());
             return null;
         }
     }
