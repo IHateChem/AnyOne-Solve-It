@@ -615,6 +615,7 @@ public class StudyService {
         int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
         url += "&page=" + random+1;
         response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+        log.info("url : {}", url);
         return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
 
     }
