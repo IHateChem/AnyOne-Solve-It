@@ -647,6 +647,7 @@ public class StudyService {
         prefix += " ";
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
         SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
+        log.info("url: {}, solvedProblemPages: {}", urlString, solvedProblemPages);
         if(solvedProblemPages == null) return getBadResponse();
         int count= solvedProblemPages.getCount();
         int problemPerRequest = solvedProblemPages.getItems().size();
