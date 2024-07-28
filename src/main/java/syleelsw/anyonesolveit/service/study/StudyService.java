@@ -613,7 +613,8 @@ public class StudyService {
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
 
         try {
-            String url = URLEncoder.encode(urlString, "UTF-8");
+            String url = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("\\+", "%2B")
+                    .replaceAll("@", "%40");
             log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
