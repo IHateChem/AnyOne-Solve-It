@@ -6,6 +6,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
 
 @Getter @Setter
 @RedisHash(value ="short", timeToLive = 5) @ToString
@@ -14,6 +15,8 @@ public class RefreshCnt {
     @Id
     private String refreshToken;
     private int cnt;
+    @TimeToLive
+    private Long expiration;
     public RefreshCnt(String refreshToken, int cnt){
         this.refreshToken = refreshToken;
         this.cnt = cnt;

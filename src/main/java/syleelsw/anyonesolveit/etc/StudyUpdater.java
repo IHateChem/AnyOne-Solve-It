@@ -49,6 +49,7 @@ public class StudyUpdater {
         List<ProblemTag> tags = problemTagRepository.findAll();
         for(ProblemTag tag: tags){
             tagTrie.insert(tag.getProblemKey(), tag.getProblemCount());
+            tagTrie.insert(tag.getKoTagKey(), tag.getProblemCount());
         }
 
     }

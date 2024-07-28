@@ -22,19 +22,25 @@ public class ProblemTag {
     private boolean isMeta;
     private int bojTagId;
     private int problemCount;
+    private String koTagKey;
     @Builder
-    public ProblemTag(String key, boolean isMeta, int bojTagId, int problemCount) {
+    public ProblemTag(String key, boolean isMeta, int bojTagId, int problemCount, String koTagKey) {
         this.problemKey = key;
         this.isMeta = isMeta;
         this.bojTagId = bojTagId;
         this.problemCount = problemCount;
+        this.koTagKey = koTagKey;
     }
     public static ProblemTag of(SolvedacTag solvedacTag) {
+        String koTagKey = solvedacTag.getDisplayNames().stream().filter(
+                tag -> tag.getLanguage().equals("ko")
+        ).findFirst().map(DisplayName::getName).orElse("");
         return ProblemTag.builder()
                 .key(solvedacTag.getKey())
                 .isMeta(solvedacTag.isMeta())
                 .bojTagId(solvedacTag.getBojTagId())
                 .problemCount(solvedacTag.getProblemCount())
+                .koTagKey(koTagKey)
                 .build();
     }
 }

@@ -76,6 +76,7 @@ public class LoginService {
             // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
+                log.info("Short Expried Token.., headers: {}", byId.get());
                 return new ResponseEntity<>(byId.get(), HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
