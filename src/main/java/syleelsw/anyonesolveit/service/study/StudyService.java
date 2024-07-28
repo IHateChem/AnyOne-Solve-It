@@ -598,16 +598,22 @@ public class StudyService {
     }
 
 
-    public ResponseEntity searchProblem(Long id, String query, Boolean notSolved, List<String> tags) {
+    public ResponseEntity searchProblem(Long id,String range, String minSolved,  String query, Boolean notSolved, List<String> tags) {
         List<ProblemTag> all = problemTagRepository.findAll();
         List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
         Study study = studyRepository.findById(id).get();
-        String prefix =filtered.stream().collect(Collectors.joining("+"));
+        String prefix = range;
+        if(minSolved != null && !minSolved.equals("")){
+            prefix += "+" + minSolved;
+        }
+        if(filtered.size()>0){
+            prefix += "+" + filtered.stream().collect(Collectors.joining("+"));
+        }
         if (notSolved){
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
             prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
         }
-        if(!prefix.equals("")){
+        if(!prefix.equals("") && query!= null  && !query.equals("")){
             prefix += "+";
         }
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
