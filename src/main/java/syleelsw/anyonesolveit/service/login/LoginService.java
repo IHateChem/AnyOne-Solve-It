@@ -70,7 +70,7 @@ public class LoginService {
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
             log.info("Access {}", jwtHeaders.get("Access").get(0));
             // 짧은시간 2회 요청 대비용
-            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders.get("Access").get(0);
+            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders.get("Access").get(0)));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
             // 짧은시간 2회 요청 대비용
