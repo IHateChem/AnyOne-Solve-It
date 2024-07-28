@@ -613,9 +613,7 @@ public class StudyService {
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
             prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
         }
-        if(!prefix.equals("") && query!= null  && !query.equals("")){
-            prefix += "+";
-        }
+        prefix += " ";
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
 
         try {
