@@ -17,6 +17,8 @@ import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.StudyService;
 
+import java.util.List;
+
 @RestController @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
@@ -137,8 +139,8 @@ public class StudyController {
 
 
     @GetMapping("/studies/{id}/problem/search")
-    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id, @RequestParam String query, @RequestParam Boolean notSolved){
-        return studyService.searchProblem(id, query, notSolved);
+    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id, @RequestParam String query, @RequestParam Boolean notSolved,@RequestParam List<String> tags){
+        return studyService.searchProblem(id, query, notSolved, tags);
     }
 
     @GetMapping("/search/tags")

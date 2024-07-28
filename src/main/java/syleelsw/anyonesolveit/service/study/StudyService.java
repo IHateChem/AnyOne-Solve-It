@@ -596,12 +596,14 @@ public class StudyService {
     }
 
 
-    public ResponseEntity searchProblem(Long id, String query, Boolean notSolved) {
+    public ResponseEntity searchProblem(Long id, String query, Boolean notSolved, List<String> tags) {
+        List<ProblemTag> all = problemTagRepository.findAll();
+        List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
         Study study = studyRepository.findById(id).get();
-        String prefix = "";
+        String prefix =filtered.stream().collect(Collectors.joining("+"));
         if (notSolved){
             List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
-            prefix = bjIds.stream().collect(Collectors.joining("+"));
+            prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
         }
         log.info("query: {}", prefix +"+"+ query);
         String url = "https://solved.ac/api/v3/search/problem?query=" + prefix +"+"+ query;
@@ -613,6 +615,6 @@ public class StudyService {
     }
 
     public ResponseEntity searchTag(String tag){
-        return new ResponseEntity(Map.of("tags", tagTrie.search(tag)), HttpStatus.OK);
+        return new ResponseEntity(Map.of("tags", tagTrie.search(tag.toLowerCase())), HttpStatus.OK);
     }
 }
