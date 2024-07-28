@@ -25,6 +25,8 @@ import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
+import java.net.URL;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -598,29 +600,36 @@ public class StudyService {
 
     public ResponseEntity searchProblem(Long id, String query, Boolean notSolved, List<String> tags) {
         List<ProblemTag> all = problemTagRepository.findAll();
-        List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"%23"+ tag.getProblemKey()).collect(Collectors.toList());
+        List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
         Study study = studyRepository.findById(id).get();
-        String prefix =filtered.stream().collect(Collectors.joining("%2B"));
+        String prefix =filtered.stream().collect(Collectors.joining("+"));
         if (notSolved){
-            List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-%40" +s).collect(Collectors.toList());
-            prefix += "%2B" + bjIds.stream().collect(Collectors.joining("%2B"));
+            List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
+            prefix += "+" + bjIds.stream().collect(Collectors.joining("+"));
         }
         if(!prefix.equals("")){
-            prefix += "%2B";
+            prefix += "+";
         }
-        String url = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
-        log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-        if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
-        Integer count = response.getBody().getCount();
-        int problemPerRequest = response.getBody().getItems().size();
-        int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
-        url += "&page=" + random+1;
-        response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-        log.info("url : {}", url);
-        return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
+        String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
 
+        try {
+            String url = URLEncoder.encode(urlString, "UTF-8");
+            log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+            if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
+            Integer count = response.getBody().getCount();
+            int problemPerRequest = response.getBody().getItems().size();
+            if (count > 0) {
+                int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
+                url = URLEncoder.encode(urlString+"&page=" + random+1, "UTF-8");
+                response = restTemplate.getForEntity(url, SolvedProblemPages.class);
+            }
+            return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
+
+        }catch (Exception e){
+            return getBadResponse();
+        }
     }
 
     public ResponseEntity searchTag(String tag){
