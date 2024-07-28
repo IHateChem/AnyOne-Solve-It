@@ -15,14 +15,16 @@ import java.util.stream.Collectors;
 public class SearchProblemDto {
     private boolean isExist;
     private List<StudyMember> whoSolved;
+    private Long problemId;
     private String title;
     private int rank;
     private List<String> types;
     @Builder
-    public SearchProblemDto(boolean isExist,String title,  List<StudyMember> whoSolved, int rank, List<String> types) {
+    public SearchProblemDto(boolean isExist,String title,Long problemId, List<StudyMember> whoSolved, int rank, List<String> types) {
         this.types = types;
         this.title = title;
         this.rank = rank;
+        this.problemId = problemId;
         this.isExist = isExist;
         this.whoSolved = whoSolved;
     }
@@ -32,6 +34,7 @@ public class SearchProblemDto {
         List<String> types = item.getTags().stream().map(SolvedTag::getKey).collect(Collectors.toList());
         String title = item.getTitleKo();
         return builder()
+                .problemId(problemId)
                 .isExist(true)
                 .title(title)
                 .whoSolved(study.getMembers().stream().filter(t-> t.getSolvedProblem().contains(problemId)).map(t2-> StudyMember.fromUserInfo(t2)).collect(Collectors.toList()))
