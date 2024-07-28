@@ -645,6 +645,12 @@ public class StudyService {
             prefix += " " + bjIds.stream().collect(Collectors.joining(" "));
         }
         prefix += " ";
+        // query를 utf-8로 인코딩
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        }catch (Exception e){
+            return getBadResponse();
+        }
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
         urlString = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("@", "%40");
         SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
