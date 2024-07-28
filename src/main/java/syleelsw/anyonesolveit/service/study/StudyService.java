@@ -617,7 +617,7 @@ public class StudyService {
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
 
         try {
-            String url = urlString.replaceAll("#", "%23").replaceAll("@", "%40").replaceAll("\\+", "%2B");
+            String url =urlString; // urlString.replaceAll("#", "%23").replaceAll("@", "%40").replaceAll("\\+", "%2B");
             log.info("prefix: {}, query: {}, sum: {}, url: {}",prefix, query,  prefix +"+"+ query, url);
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
