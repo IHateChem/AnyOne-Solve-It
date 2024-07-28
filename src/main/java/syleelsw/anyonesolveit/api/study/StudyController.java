@@ -139,8 +139,8 @@ public class StudyController {
 
 
     @GetMapping("/studies/{id}/problem/search")
-    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,@RequestParam String range, @RequestParam String minSolved,  @RequestParam String query, @RequestParam Boolean notSolved,@RequestParam List<String> tags){
-        return studyService.searchProblem(id,range, minSolved, query, notSolved, tags);
+    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,@RequestParam String range, @RequestParam String minSolved,  @RequestParam String query, @RequestParam Boolean notSolved,@RequestParam List<String> tags, @RequestParam Boolean isRandom){
+        return studyService.searchProblem(id,range, minSolved, query, notSolved, tags, isRandom);
     }
 
     @GetMapping("/search/tags")

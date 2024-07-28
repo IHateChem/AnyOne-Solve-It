@@ -598,7 +598,7 @@ public class StudyService {
     }
 
 
-    public ResponseEntity searchProblem(Long id,String range, String minSolved,  String query, Boolean notSolved, List<String> tags) {
+    public ResponseEntity searchProblem(Long id,String range, String minSolved,  String query, Boolean notSolved, List<String> tags, Boolean isRandom) {
         List<ProblemTag> all = problemTagRepository.findAll();
         List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
         Study study = studyRepository.findById(id).get();
@@ -627,7 +627,7 @@ public class StudyService {
             if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
             Integer count = response.getBody().getCount();
             int problemPerRequest = response.getBody().getItems().size();
-            if (count > 0) {
+            if (count > 0 && isRandom) {
                 int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
                 url = url +"&page=" + (random+1);
                 response = restTemplate.getForEntity(url, SolvedProblemPages.class);
