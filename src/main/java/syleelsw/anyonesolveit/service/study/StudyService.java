@@ -603,7 +603,7 @@ public class StudyService {
         List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
         Study study = studyRepository.findById(id).get();
         String prefix = range;
-        if(minSolved != null && !minSolved.equals("")){
+        if(minSolved != null && !minSolved.equals("")&& !minSolved.equals("0")){
             prefix += "+" + minSolved;
         }
         if(filtered.size()>0){
