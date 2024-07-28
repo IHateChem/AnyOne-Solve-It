@@ -646,7 +646,7 @@ public class StudyService {
         }
         prefix += " ";
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
-        urlString = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("@", "%40");,
+        urlString = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("@", "%40");
         SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
         log.info("url: {}, solvedProblemPages: {}", urlString, solvedProblemPages);
         if(solvedProblemPages == null) return getBadResponse();
