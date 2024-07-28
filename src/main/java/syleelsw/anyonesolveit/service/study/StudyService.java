@@ -610,6 +610,11 @@ public class StudyService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
         if(!response.getStatusCode().is2xxSuccessful()) return getBadResponse();
+        Integer count = response.getBody().getCount();
+        int problemPerRequest = response.getBody().getItems().size();
+        int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
+        url += "&page=" + random+1;
+        response = restTemplate.getForEntity(url, SolvedProblemPages.class);
         return new ResponseEntity(Map.of("problems", response.getBody().getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
 
     }
