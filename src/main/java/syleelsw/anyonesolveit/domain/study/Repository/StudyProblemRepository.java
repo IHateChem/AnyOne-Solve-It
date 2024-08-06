@@ -23,11 +23,29 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
     @Modifying
     @Query("SELECT spe FROM StudyProblemEntity spe " +
             "WHERE spe.study = :study " +
-            "AND (spe.problem.title LIKE %:query% OR spe.problem.id = :query) " +
+            "AND (spe.problem.title LIKE %:query% ) " +
             "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
             "AND spe.problem.rank BETWEEN :startRank AND :endRank"
     )
     List<StudyProblemEntity> findByStudyAndQueryAndDateAndRank(
+            @Param("study") Study study,
+            @Param("query") String query,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("startRank") Integer startRank,
+            @Param("endRank") Integer endRank
+    );
+
+
+
+    @Modifying
+    @Query("SELECT spe FROM StudyProblemEntity spe " +
+            "WHERE spe.study = :study " +
+            "AND (spe.problem.title LIKE %:query% OR spe.problem.id = :query) " +
+            "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank"
+    )
+    List<StudyProblemEntity> findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
             @Param("study") Study study,
             @Param("query") String query,
             @Param("startDate") LocalDateTime startDate,

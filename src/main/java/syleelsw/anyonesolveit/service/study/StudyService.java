@@ -675,14 +675,26 @@ public class StudyService {
     }
 
     public ResponseEntity searchPastProblem(Long id, String query, List<String> tags, LocalDate startDate, Integer startRank, LocalDate endDate, Integer endRank, Integer page) {
-        List<StudyProblemEntity> items = studyProblemRepository.findByStudyAndQueryAndDateAndRank(
+        // query가 숫자로만 이루어져있으면
+        List<StudyProblemEntity> items;
+        if(query.matches("^[0-9]*$")){
+            items = studyProblemRepository.findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
+                    studyRepository.findById(id).get(),
+                    query,
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    startRank,
+                    endRank
+            );
+        }else{
+            items= studyProblemRepository.findByStudyAndQueryAndDateAndRank(
                 studyRepository.findById(id).get(),
                 query,
                 startDate.atStartOfDay(),
                 endDate.plusDays(1).atStartOfDay(),
                 startRank,
                 endRank
-        );
+        );}
 
         List<StudyProblemEntity> tagFilteredItems = items.stream().filter(item -> filterProblemTag(tags, item.getProblem())).toList();
         items = (List<StudyProblemEntity>) listSplitter(tagFilteredItems, page);
