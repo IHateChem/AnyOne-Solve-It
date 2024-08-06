@@ -717,6 +717,6 @@ public class StudyService {
         items = (List<StudyProblemEntity>) listSplitter(items, page);
         log.info("items: {}", items);
 
-        return new ResponseEntity(Map.of("total", totalSize, "result", items.stream().map(StudyProblemResponse::of).collect(Collectors.toList())), HttpStatus.OK);
+        return new ResponseEntity(Map.of("total", totalSize, "result", items.stream().map(SearchProblemDto::of).collect(Collectors.toList())), HttpStatus.OK);
     }
 }

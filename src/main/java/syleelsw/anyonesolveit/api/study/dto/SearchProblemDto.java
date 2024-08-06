@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import syleelsw.anyonesolveit.domain.study.Problem;
 import syleelsw.anyonesolveit.domain.study.Study;
+import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.service.validation.dto.TagDto;
 
 import java.util.List;
@@ -27,6 +28,16 @@ public class SearchProblemDto {
         this.problemId = problemId;
         this.isExist = isExist;
         this.whoSolved = whoSolved;
+    }
+    public static SearchProblemDto of(StudyProblemEntity studyProblemEntity){
+        return builder()
+                .problemId(studyProblemEntity.getProblem().getId())
+                .isExist(true)
+                .title(studyProblemEntity.getProblem().getTitle())
+                .rank(studyProblemEntity.getProblem().getRank())
+                .types(studyProblemEntity.getProblem().getTypes())
+                .build();
+
     }
     public static SearchProblemDto of(Study study, SolvedacItem item){
         Long problemId = item.getProblemId();
