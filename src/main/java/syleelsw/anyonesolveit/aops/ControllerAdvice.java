@@ -29,8 +29,8 @@ import java.util.Optional;
 public class ControllerAdvice {
     private final JwtTokenProvider jwtTokenProvider;
     private final StudyRepository studyRepository;
-    private final RefreshRedisRepository refreshRedisRepository;
     private final RefreshShortRedisRepository refreshShortRedisRepository;
+    private final RefreshRedisRepository refreshRedisRepository;
     private final RefreshCntRedisRepository refreshCntRedisRepository;
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allService() &&  args(loginBody, bindingResult)")
     public ResponseEntity validator(ProceedingJoinPoint joinPoint, LoginBody loginBody,  BindingResult bindingResult) throws Throwable {

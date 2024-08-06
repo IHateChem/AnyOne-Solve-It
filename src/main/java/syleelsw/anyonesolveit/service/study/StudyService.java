@@ -35,6 +35,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,8 +62,7 @@ public class StudyService {
     private final ProblemDetailRepository problemDetailRepository;
     private final ProblemCodeRepository problemCodeRepository;
     private Map<Long, Problem> storeProblem;
-    @Value("${anyone.page}")
-    private Integer maxPage;
+    private Integer maxPage = 12;
 
 
     @PostConstruct
@@ -670,5 +670,24 @@ public class StudyService {
     public ResponseEntity searchTag(String tag){
         return new ResponseEntity(Map.of("tags", tagTrie.search(tag.toLowerCase())), HttpStatus.OK);
     }
+    public boolean filterProblemTag(List<String> tags, Problem problem){
+        return tags.stream().anyMatch(tag -> problem.getTypes().contains(tag));
+    }
 
+    public ResponseEntity searchPastProblem(Long id, String query, List<String> tags, LocalDate startDate, Integer startRank, LocalDate endDate, Integer endRank, Integer page) {
+        List<StudyProblemEntity> items = studyProblemRepository.findByStudyAndQueryAndDateAndRank(
+                studyRepository.findById(id).get(),
+                query,
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                startRank,
+                endRank
+        );
+
+        List<StudyProblemEntity> tagFilteredItems = items.stream().filter(item -> filterProblemTag(tags, item.getProblem())).toList();
+        items = (List<StudyProblemEntity>) listSplitter(tagFilteredItems, page);
+        log.info("items: {}", items);
+
+        return new ResponseEntity(items.stream().map(StudyProblemResponse::of).collect(Collectors.toList()), HttpStatus.OK);
+    }
 }

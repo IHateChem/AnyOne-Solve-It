@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,9 @@ import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.StudyService;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @RestController @RequestMapping("/api")
@@ -141,6 +145,12 @@ public class StudyController {
     @GetMapping("/studies/{id}/problem/search")
     public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,@RequestParam String range, @RequestParam String minSolved,  @RequestParam String query, @RequestParam Boolean notSolved,@RequestParam List<String> tags, @RequestParam Boolean isRandom){
         return studyService.searchProblem(id,range, minSolved, query, notSolved, tags, isRandom);
+    }
+
+    @GetMapping("/studies/{id}/past/problem/search")
+    public ResponseEntity searchPastProblem(@RequestHeader String Access, @PathVariable Long id, @RequestParam String query, @RequestParam List<String> tags
+    , @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate, @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate endDate, @RequestParam Integer startRank, @RequestParam Integer endRank, @RequestParam Integer page){
+        return studyService.searchPastProblem(id, query, tags, startDate, startRank, endDate, endRank, page);
     }
 
     @GetMapping("/search/tags")
