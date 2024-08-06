@@ -25,7 +25,8 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
             "WHERE spe.study = :study " +
             "AND (spe.problem.title LIKE %:query% ) " +
             "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
-            "AND spe.problem.rank BETWEEN :startRank AND :endRank"
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
     )
     List<StudyProblemEntity> findByStudyAndQueryAndDateAndRank(
             @Param("study") Study study,
@@ -42,7 +43,8 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
             "WHERE spe.study = :study " +
             "AND (spe.problem.title LIKE %:query% OR spe.problem.id = :query) " +
             "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
-            "AND spe.problem.rank BETWEEN :startRank AND :endRank"
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
     )
     List<StudyProblemEntity> findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
             @Param("study") Study study,
@@ -57,7 +59,8 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
     @Query("SELECT spe FROM StudyProblemEntity spe " +
             "WHERE spe.study = :study " +
             "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
-            "AND spe.problem.rank BETWEEN :startRank AND :endRank"
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
     )
     List<StudyProblemEntity> findByStudyAndDateAndRank(
             @Param("study") Study study,
