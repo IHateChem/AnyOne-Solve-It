@@ -683,7 +683,16 @@ public class StudyService {
         if(endRank==-1){
             endRank = 30;
         }
-        if(query.matches("^[0-9]*$")){
+        if (query.equals("")){
+            items = studyProblemRepository.findByStudyAndDateAndRank(
+                    studyRepository.findById(id).get(),
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    startRank,
+                    endRank
+            );
+        }
+        else if(query.matches("^[0-9]*$")){
             items = studyProblemRepository.findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
                     studyRepository.findById(id).get(),
                     query,

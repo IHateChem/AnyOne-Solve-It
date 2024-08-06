@@ -37,7 +37,6 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
     );
 
 
-
     @Modifying
     @Query("SELECT spe FROM StudyProblemEntity spe " +
             "WHERE spe.study = :study " +
@@ -48,6 +47,20 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
     List<StudyProblemEntity> findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
             @Param("study") Study study,
             @Param("query") String query,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("startRank") Integer startRank,
+            @Param("endRank") Integer endRank
+    );
+
+    @Modifying
+    @Query("SELECT spe FROM StudyProblemEntity spe " +
+            "WHERE spe.study = :study " +
+            "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank"
+    )
+    List<StudyProblemEntity> findByStudyAndDateAndRank(
+            @Param("study") Study study,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("startRank") Integer startRank,
