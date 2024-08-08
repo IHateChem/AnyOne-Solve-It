@@ -13,9 +13,9 @@ public class ProblemResponse {
     private List<String> types;
     private String link;
     private Integer rank;
-    private Integer probNum;
+    private Long probNum;
     @Builder
-    private ProblemResponse(Integer problemNum, String title, List<String> types, String link, Integer rank) {
+    private ProblemResponse(Long problemNum, String title, List<String> types, String link, Integer rank) {
         this.title = title;
         this.probNum = problemNum;
         this.types = types;
@@ -35,7 +35,7 @@ public class ProblemResponse {
     public static ProblemResponse of(Problem item){
         return builder()
                 .title(item.getTitle())
-                .problemNum(Math.toIntExact(item.getId()))
+                .problemNum(item.getId())
                 .types(item.getTypes())
                 .link(item.getLink())
                 .rank(item.getRank())

@@ -36,7 +36,7 @@ public class UserInfo extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private LanguageTypes language;
     @ElementCollection(fetch = FetchType.LAZY)
-    private List<Integer> solvedProblem;
+    private List<Long> solvedProblem;
     @Column(columnDefinition="TEXT")
     private String solveProblemLevel;
     @ColumnDefault("true")
@@ -47,7 +47,7 @@ public class UserInfo extends BaseEntity {
 
 
     @Builder
-    private UserInfo(Long id,String name,  String city, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, LanguageTypes language, boolean isFirst, List<Integer> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
+    private UserInfo(Long id,String name,  String city, String username,String picture,  String email, String bjname, Integer rank, String prefer_type, Locations area, LanguageTypes language, boolean isFirst, List<Long> solvedProblem, String solveProblemLevel,Long solved, Provider provider) {
         this.id = id;
         this.name = name;
         this.city = city;

@@ -1,17 +1,27 @@
 package syleelsw.anyonesolveit.api.study;
 
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import syleelsw.anyonesolveit.aops.IgnoreValidation;
+import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.etc.GoalTypes;
 import syleelsw.anyonesolveit.etc.LanguageTypes;
 import syleelsw.anyonesolveit.etc.Locations;
 import syleelsw.anyonesolveit.service.study.StudyService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 @RestController @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -51,6 +61,11 @@ public class StudyController {
     @DeleteMapping("/studies/{id}/suggestions")
     public ResponseEntity delAllSuggestion(@RequestHeader String Access, @PathVariable Long id){
         return studyService.delAllSuggestion(Access, id);
+    }
+
+    @PostMapping("/studies/{id}/other/suggestion")
+    public ResponseEntity postOtherStudyProblem(@RequestHeader String Access, @PathVariable Long id,@RequestBody OtherProblemDTO problemDTO){
+        return studyService.postOtherStudyProblem(id, problemDTO);
     }
 
     @PostMapping("/studies/{id}/suggestion/{problem}")
@@ -98,4 +113,48 @@ public class StudyController {
         return studyService.confirmParticipation(Access, participationId, confirm);
     }
 
+
+
+    @GetMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity getProblemDetail(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem){
+        return studyService.getProblemDetail(id, problem);
+    }
+
+
+    @PostMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity postProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestBody ProblemCodeDTO problemCode){
+        return studyService.postProblemCode(id, problem, problemCode);
+    }
+
+    @PutMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity putProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestBody ProblemCodeDTO problemCode){
+        return studyService.putProblemCode(id, problem, problemCode);
+    }
+
+    @DeleteMapping("/studies/{id}/problems/{problem}")
+    public ResponseEntity delProblemCode(@RequestHeader String Access, @PathVariable Long id, @PathVariable Long problem, @RequestParam Long codeId){
+        return studyService.delProblemCode(id, problem, codeId);
+    }
+
+    @GetMapping("/problem/tags")
+    public ResponseEntity getTags(@RequestHeader String Access){
+        return studyService.getTags();
+    }
+
+
+    @GetMapping("/studies/{id}/problem/search")
+    public ResponseEntity searchProblem(@RequestHeader String Access,@PathVariable Long id,@RequestParam String range, @RequestParam String minSolved,  @RequestParam String query, @RequestParam Boolean notSolved,@RequestParam List<String> tags, @RequestParam Boolean isRandom){
+        return studyService.searchProblem(id,range, minSolved, query, notSolved, tags, isRandom);
+    }
+
+    @GetMapping("/studies/{id}/past/problem/search")
+    public ResponseEntity searchPastProblem(@RequestHeader String Access, @PathVariable Long id, @RequestParam String query, @RequestParam List<String> tags
+    , @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate, @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate endDate, @RequestParam Integer startRank, @RequestParam Integer endRank, @RequestParam Integer page){
+        return studyService.searchPastProblem(id, query, tags, startDate, startRank, endDate, endRank, page);
+    }
+
+    @GetMapping("/search/tags")
+    public ResponseEntity searchTag(@RequestHeader String Access, @RequestParam String query){
+        return studyService.searchTag(query);
+    }
 }

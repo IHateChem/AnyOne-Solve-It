@@ -1,5 +1,7 @@
 package syleelsw.anyonesolveit.service.study;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
+import syleelsw.anyonesolveit.api.login.dto.OtherProblemDTO;
 import syleelsw.anyonesolveit.api.study.dto.*;
 import syleelsw.anyonesolveit.domain.study.*;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoin;
 import syleelsw.anyonesolveit.domain.join.UserStudyJoinRepository;
+import syleelsw.anyonesolveit.domain.study.ProblemDetail;
 import syleelsw.anyonesolveit.domain.study.Repository.*;
 import syleelsw.anyonesolveit.domain.study.enums.ParticipationStates;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
@@ -23,20 +29,29 @@ import syleelsw.anyonesolveit.service.study.dto.StudyResponse;
 import syleelsw.anyonesolveit.service.study.tools.ProblemSolvedCountUpdater;
 import syleelsw.anyonesolveit.service.validation.ValidationService;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.Math.min;
+import static syleelsw.anyonesolveit.etc.StudyUpdater.tagTrie;
 
 @Service @Slf4j @RequiredArgsConstructor
 public class StudyService {
     private final StudyRepository studyRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
-    private final UserStudyJoinRepository userStudyJoinRepository;
     private final ProblemSolvedCountUpdater problemSolvedCountUpdater;
+    private final ProblemTagRepository problemTagRepository;
     private final ProblemRepository problemRepository;
     private final ValidationService validationService;
     private final StudyProblemRepository studyProblemRepository;
@@ -44,9 +59,10 @@ public class StudyService {
     private final NoticeService noticeService;
     private final StudyUpdater studyUpdater;
     private final NoticeRepository noticeRepository;
+    private final ProblemDetailRepository problemDetailRepository;
+    private final ProblemCodeRepository problemCodeRepository;
     private Map<Long, Problem> storeProblem;
-    @Value("${anyone.page}")
-    private Integer maxPage;
+    private Integer maxPage = 12;
 
 
     @PostConstruct
@@ -401,6 +417,11 @@ public class StudyService {
         if(study.getUser().equals(user)){
             // 스터디원이 한명밖에 없는경우
             if(study.getMembers().size()==1) {
+                List<ProblemDetail> allByStudy = problemDetailRepository.findAllByStudy(study);
+                allByStudy.forEach( pd -> problemCodeRepository.deleteAll(pd.getProblemCodes()));
+                problemDetailRepository.deleteAllByStudy(study);
+                studyProblemRepository.deleteAllByStudy(study);
+                noticeRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }
             return getGoodResponse(Map.of("isManager", true));
@@ -463,12 +484,13 @@ public class StudyService {
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
         boolean isExist = true;
+        Problem problem = null;
         try {
-            problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
+            problem = problemRepository.findById(problemId).orElse(getProblemInfoFromSolvedAc(problemId));
         }catch(HttpClientErrorException e){
             isExist = false;
         }
-        return new ResponseEntity(SearchProblemDto.of(isExist, study, problemId), HttpStatus.OK);
+        return new ResponseEntity(SearchProblemDto.of(isExist, study, problem), HttpStatus.OK);
     }
 
     public ResponseEntity changeRecruiting(String access, Long id, boolean recruiting) {
@@ -478,5 +500,223 @@ public class StudyService {
         study.setRecruiting(recruiting);
         studyRepository.save(study);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity postOtherStudyProblem(Long id, OtherProblemDTO problemDTO) {
+        Long problemId = problemRepository.findMaxId();
+        Problem problem = Problem.builder()
+                .problemId(problemId+1)
+                .title(problemDTO.getTitle())
+                .types(problemDTO.getTypes())
+                .link(problemDTO.getLink())
+                .rank(problemDTO.getRank())
+                .build();
+        problemRepository.save(problem);
+        StudyProblemEntity studyProblemEntity = StudyProblemEntity.builder()
+                .id(id +"_"+problem.getId())
+                .problem(problem)
+                .study(studyRepository.findById(id).get()).build();
+        studyProblemRepository.save(studyProblemEntity);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+    @Transactional
+    public ResponseEntity getProblemDetail(Long id, Long problem) {
+        Study study = studyRepository.findById(id).get();
+        Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
+        ProblemDetail problemDetail;
+        if(byStudyAndProblemId.isEmpty()){
+            // 새롭게 만들어준다.
+            List<ProblemCode> problemCodeList = study.getMembers().stream().map(member -> ProblemCode.builder()
+                    .name(member.getName())
+                    .code("")
+                    .build()).toList();
+            List<ProblemCode> problemCodes = problemCodeRepository.saveAll(problemCodeList);
+            problemDetail = ProblemDetail.builder()
+                    .problemNumber(problem)
+                    .study(study)
+                    .problemCodes(problemCodes)
+                    .build();
+            problemDetailRepository.save(problemDetail);
+        }else{
+            problemDetail = byStudyAndProblemId.get();
+        }
+
+
+        return new ResponseEntity<>(Map.of("codes", problemDetail.getProblemCodes()), HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity postProblemCode(Long id, Long problem, ProblemCodeDTO problemCode) {
+        Study study = studyRepository.findById(id).get();
+        Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
+        if(byStudyAndProblemId.isEmpty()){
+            return getBadResponse();
+        }
+        ProblemCode newProblemCode = ProblemCode.builder()
+                .name(problemCode.getName())
+                .code(problemCode.getCode())
+                .build();
+        ProblemCode savedCode = problemCodeRepository.save(newProblemCode);
+        ProblemDetail problemDetail = byStudyAndProblemId.get();
+        problemDetail.getProblemCodes().add(savedCode);
+        problemDetailRepository.save(problemDetail);
+        return new ResponseEntity(Map.of("id", savedCode.getId()), HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity putProblemCode(Long id, Long problem, ProblemCodeDTO problemCode) {
+        Study study = studyRepository.findById(id).get();
+        Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
+
+        Optional<ProblemCode> optionalProblemCode = problemCodeRepository.findById(problemCode.getId());
+        if (byStudyAndProblemId.isEmpty() || optionalProblemCode.isEmpty()) {
+            return getBadResponse();
+        }
+        ProblemCode problemCode1 = optionalProblemCode.get();
+
+        ProblemDetail problemDetail = byStudyAndProblemId.get();
+        // problemDetail에 problemCode.getId()가 없으면 400
+        if (!problemDetail.getProblemCodes().contains(optionalProblemCode.get())) {
+            return getBadResponse();
+        }
+        problemCode1.setCode(problemCode.getCode());
+        problemCodeRepository.save(problemCode1);
+        return getGoodResponse();
+    }
+
+    @Transactional
+    public ResponseEntity delProblemCode(Long id, Long problem, Long codeId) {
+        Study study = studyRepository.findById(id).get();
+        Optional<ProblemDetail> byStudyAndProblemId = problemDetailRepository.findByStudyAndProblemNumber(study, problem);
+        Optional<ProblemCode> optionalProblemCode = problemCodeRepository.findById(codeId);
+        if (byStudyAndProblemId.isEmpty() || optionalProblemCode.isEmpty()) {
+            return getBadResponse();
+        }
+        ProblemDetail problemDetail = byStudyAndProblemId.get();
+        problemDetail.getProblemCodes().remove(optionalProblemCode.get());
+        problemDetailRepository.save(problemDetail);
+        problemCodeRepository.delete(optionalProblemCode.get());
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    public ResponseEntity getTags() {
+        List<ProblemTag> all = problemTagRepository.findAllByOrderByProblemCountDesc();
+        return new ResponseEntity(all.stream().map(tag -> tag.getProblemKey()).collect(Collectors.toList()), HttpStatus.OK);
+    }
+
+    public SolvedProblemPages requestToSolvedAcSearch(String urlString){
+        try{
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String inputLine;
+            StringBuffer response8 = new StringBuffer();
+
+            while ((inputLine = in.readLine()) != null) {
+                response8.append(inputLine);
+            }
+            in.close();
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return mapper.readValue(response8.toString(), SolvedProblemPages.class);
+        }catch (Exception e){
+            log.info("error: {}", e.getMessage());
+            return null;
+        }
+    }
+
+
+    public ResponseEntity searchProblem(Long id,String range, String minSolved,  String query, Boolean notSolved, List<String> tags, Boolean isRandom) {
+        List<ProblemTag> all = problemTagRepository.findAll();
+        List<String> filtered = all.stream().filter(tag -> tags.contains(tag.getProblemKey()) || tags.contains(tag.getKoTagKey())).map(tag->"#"+ tag.getProblemKey()).collect(Collectors.toList());
+        Study study = studyRepository.findById(id).get();
+        String prefix = range;
+        if(minSolved != null && !minSolved.equals("")&& !minSolved.equals("0")){
+            prefix += " " + minSolved;
+        }
+        if(filtered.size()>0){
+            prefix += " " + filtered.stream().collect(Collectors.joining(" "));
+        }
+        if (notSolved){
+            List<String> bjIds = study.getMembers().stream().map(UserInfo::getBjname).map(s-> "-@" +s).collect(Collectors.toList());
+            prefix += " " + bjIds.stream().collect(Collectors.joining(" "));
+        }
+        prefix += " ";
+        // query를 utf-8로 인코딩
+        try {
+            query = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        }catch (Exception e){
+            return getBadResponse();
+        }
+        String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
+        urlString = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("@", "%40");
+        SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
+        log.info("url: {}, solvedProblemPages: {}", urlString, solvedProblemPages);
+        if(solvedProblemPages == null) return getBadResponse();
+        int count= solvedProblemPages.getCount();
+        int problemPerRequest = solvedProblemPages.getItems().size();
+        if (count > 0 && isRandom) {
+            int random = new Random().nextInt((int) Math.ceil((double) count /problemPerRequest));
+            String url = urlString +"&page=" + (random+1);
+            solvedProblemPages = requestToSolvedAcSearch(url);
+        }
+        return new ResponseEntity(Map.of("problems",solvedProblemPages.getItems().stream().map(item->SearchProblemDto.of(study, item))), HttpStatus.OK);
+
+    }
+
+    public ResponseEntity searchTag(String tag){
+        return new ResponseEntity(Map.of("tags", tagTrie.search(tag.toLowerCase())), HttpStatus.OK);
+    }
+    public boolean filterProblemTag(List<String> tags, Problem problem){
+        return tags.stream().anyMatch(tag -> problem.getTypes().contains(tag));
+    }
+
+    public ResponseEntity searchPastProblem(Long id, String query, List<String> tags, LocalDate startDate, Integer startRank, LocalDate endDate, Integer endRank, Integer page) {
+        // query가 숫자로만 이루어져있으면
+        List<StudyProblemEntity> items;
+        if(startRank == -1){
+            startRank = 0;
+        }
+        if(endRank==-1){
+            endRank = 30;
+        }
+        if (query.equals("")){
+            items = studyProblemRepository.findByStudyAndDateAndRank(
+                    studyRepository.findById(id).get(),
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    startRank,
+                    endRank
+            );
+        }
+        else if(query.matches("^[0-9]*$")){
+            items = studyProblemRepository.findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
+                    studyRepository.findById(id).get(),
+                    query,
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    startRank,
+                    endRank
+            );
+        }else{
+            items= studyProblemRepository.findByStudyAndQueryAndDateAndRank(
+                studyRepository.findById(id).get(),
+                query,
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                startRank,
+                endRank
+        );}
+        if(tags.size()>0){
+            items = items.stream().filter(item -> filterProblemTag(tags, item.getProblem())).toList();
+        }
+        int totalSize = items.size();
+        items = (List<StudyProblemEntity>) listSplitter(items, page);
+        log.info("items: {}", items);
+
+        return new ResponseEntity(Map.of("total", totalSize, "result", items.stream().map(StudyProblemResponse::of).collect(Collectors.toList())), HttpStatus.OK);
     }
 }

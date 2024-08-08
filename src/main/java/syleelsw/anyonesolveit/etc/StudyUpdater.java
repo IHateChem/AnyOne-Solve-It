@@ -1,5 +1,6 @@
 package syleelsw.anyonesolveit.etc;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.collections.SynchronizedStack;
@@ -12,13 +13,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
+import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
+import syleelsw.anyonesolveit.domain.study.ProblemTag;
+import syleelsw.anyonesolveit.domain.study.Repository.ProblemTagRepository;
 import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
+import syleelsw.anyonesolveit.service.study.TagTrie;
+import syleelsw.anyonesolveit.service.study.tools.ProblemTagsUpdator;
 import syleelsw.anyonesolveit.service.user.UserService;
 
 import java.time.LocalDateTime;
@@ -32,6 +38,25 @@ public class StudyUpdater {
     private final UserRepository userRepository;
     @Qualifier("taskExecutor")
     private final Executor executor;
+    private final ProblemTagsUpdator problemTagsUpdator;
+    private final ProblemTagRepository problemTagRepository;
+    public static final TagTrie tagTrie = new TagTrie();
+
+    @PostConstruct
+    public void init() {
+        log.info("Update Tags on startup...");
+        problemTagsUpdator.update();
+        List<ProblemTag> tags = problemTagRepository.findAll();
+        for(ProblemTag tag: tags){
+            tagTrie.insert(tag.getProblemKey(), tag.getProblemCount());
+            tagTrie.insert(tag.getKoTagKey(), tag.getProblemCount());
+        }
+
+    }
+    @Scheduled(cron = "0 0 0 * * *")
+    public void updateTags(){
+        problemTagsUpdator.update();
+    }
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void run() {
@@ -53,12 +78,12 @@ public class StudyUpdater {
         }
     }
     @Transactional
-    public Callable<Set<Integer>> createTask(String url) {
+    public Callable<Set<Long>> createTask(String url) {
         RestTemplate restTemplate = new RestTemplate();
         return () -> {
-            Set<Integer> set = new HashSet<>();
+            Set<Long> set = new HashSet<>();
             ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-            for (SolvedacPageItem item : response.getBody().getItems()) {
+            for (SolvedacItem item : response.getBody().getItems()) {
                 set.add(item.getProblemId());
             }
             return set;
@@ -76,7 +101,7 @@ public class StudyUpdater {
             RestTemplate restTemplate = new RestTemplate();
             try{
                 ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-                for (SolvedacPageItem item : response.getBody().getItems()) {
+                for (SolvedacItem item : response.getBody().getItems()) {
                     set.add(item.getProblemId());
                 }
 
@@ -91,7 +116,7 @@ public class StudyUpdater {
     public void updateUser(List<UserInfo> users) {
         String solved_dac_url = "https://solved.ac/api/v3";
         CopyOnWriteArrayList<UserInfo> userInfos = new CopyOnWriteArrayList<>();
-        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
+        Set<Long> problemSet = Collections.synchronizedSet(new HashSet<>());
         for (UserInfo user : users) {
             if(user.getModifiedDateTime().isAfter(LocalDateTime.now().minusHours(1))) continue;
             String username = user.getBjname();

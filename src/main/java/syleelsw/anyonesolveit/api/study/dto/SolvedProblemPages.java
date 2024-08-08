@@ -9,5 +9,5 @@ import java.util.List;
 @ToString
 public class SolvedProblemPages {
     private Integer count;
-    private List<SolvedacPageItem> items;
+    private List<SolvedacItem> items;
 }

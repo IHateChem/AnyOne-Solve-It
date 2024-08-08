@@ -3,21 +3,27 @@ package syleelsw.anyonesolveit.domain.login;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
-import org.springframework.http.HttpHeaders;
 
 @Getter @Setter
-@RedisHash(value ="short", timeToLive = 10) @ToString
-public class RefreshShort {
+@RedisHash(value ="short", timeToLive = 5) @ToString
+@Slf4j
+public class RefreshCnt {
     @Id
     private String refreshToken;
-    private String access;
+    private Integer cnt;
     @TimeToLive
     private Long expiration;
-    public RefreshShort(String refreshToken,String access){
+    public RefreshCnt(String refreshToken, int cnt){
         this.refreshToken = refreshToken;
-        this.access = access;
+        this.cnt = cnt;
+    }
+
+    public void addCnt() {
+        log.info("refresh cnt add,id:{} cnt : {} ",this.refreshToken, this.cnt);
+        this.cnt++;
     }
 }

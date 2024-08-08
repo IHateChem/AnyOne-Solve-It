@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.aops.Timer;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
+import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
 import syleelsw.anyonesolveit.api.user.dto.*;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformation;
 import syleelsw.anyonesolveit.domain.etc.BaekjoonInformationRepository;
@@ -73,7 +73,7 @@ public class UserService {
             RestTemplate restTemplate = new RestTemplate();
             try{
                 ResponseEntity<SolvedProblemPages> response = restTemplate.getForEntity(url, SolvedProblemPages.class);
-                for (SolvedacPageItem item : response.getBody().getItems()) {
+                for (SolvedacItem item : response.getBody().getItems()) {
                     set.add(item.getProblemId());
                 }
 
@@ -143,25 +143,28 @@ public class UserService {
         log.info("SolvedProblem: {}", solvedCount);
         // 걸리는 시간을 알아보기 위해 Timer를 추가한다.
 
-
-        Set<Integer> problemSet = Collections.synchronizedSet(new HashSet<>());
-
         int pageCount = (int) (solvedCount / 50) + 1;
         CountDownLatch latch = new CountDownLatch(pageCount);
+
+        List<Set<Long>> problemSetList = new ArrayList<>();
+        for (int i = 0; i < pageCount; i++) {
+            problemSetList.add(new HashSet<>());
+        }
 
         long startTime = System.nanoTime();
         for (int i = 0; i < pageCount; i++) {
             String url = solved_dac_url + "/search/problem?query=@" + username + "&sort=level&page=" + (i + 1);
-            Job task = new Job(url, problemSet, latch);
+            Job task = new Job(url, problemSetList.get(i), latch);
             executor.execute(task);
         }
 
         try {
             latch.await(); // 모든 작업이 완료될 때까지 대기
             long endTime = System.nanoTime();
-            log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000_000 );
+            List<Long> resultList = problemSetList.stream().flatMap(Set::stream).collect(Collectors.toList());
+            log.info("쓰레드 작업 완료, 걸린시간: {}", (endTime - startTime) / 1_000_000 );
             return SolvedProblemDto.builder()
-                    .solvedProblems(problemSet.stream().toList())
+                    .solvedProblems(resultList)
                     .solved(user_level_problem)
                     .build();
         } catch (InterruptedException e) {

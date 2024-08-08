@@ -9,6 +9,7 @@ import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.study.StudyProblemEntity;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,5 +17,56 @@ public interface StudyProblemRepository extends JpaRepository<StudyProblemEntity
 
     Optional<List<StudyProblemEntity>> findTop10ByStudyIdOrderByModifiedDateTimeDesc(Long id);
 
+
     void deleteAllByStudy(Study study);
+
+    @Modifying
+    @Query("SELECT spe FROM StudyProblemEntity spe " +
+            "WHERE spe.study = :study " +
+            "AND (spe.problem.title LIKE %:query% ) " +
+            "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
+    )
+    List<StudyProblemEntity> findByStudyAndQueryAndDateAndRank(
+            @Param("study") Study study,
+            @Param("query") String query,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("startRank") Integer startRank,
+            @Param("endRank") Integer endRank
+    );
+
+
+    @Modifying
+    @Query("SELECT spe FROM StudyProblemEntity spe " +
+            "WHERE spe.study = :study " +
+            "AND (spe.problem.title LIKE %:query% OR spe.problem.id = :query) " +
+            "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
+    )
+    List<StudyProblemEntity> findByStudyAndQueryAndDateAndRankWhenQueryIsNumeric(
+            @Param("study") Study study,
+            @Param("query") String query,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("startRank") Integer startRank,
+            @Param("endRank") Integer endRank
+    );
+
+    @Modifying
+    @Query("SELECT spe FROM StudyProblemEntity spe " +
+            "WHERE spe.study = :study " +
+            "AND spe.createdDateTime BETWEEN :startDate AND :endDate " +
+            "AND spe.problem.rank BETWEEN :startRank AND :endRank "
+            +"ORDER BY spe.modifiedDateTime DESC"
+    )
+    List<StudyProblemEntity> findByStudyAndDateAndRank(
+            @Param("study") Study study,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("startRank") Integer startRank,
+            @Param("endRank") Integer endRank
+    );
 }

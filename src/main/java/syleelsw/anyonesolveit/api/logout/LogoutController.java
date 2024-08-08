@@ -12,7 +12,7 @@ import syleelsw.anyonesolveit.service.login.LoginService;
 @Slf4j
 public class LogoutController {
     private final LoginService loginService;
-    @GetMapping("/logout")
+    @GetMapping("/logout") @IgnoreValidation
     public ResponseEntity logout(@RequestHeader String Access){
         return loginService.logout(Access);
     }

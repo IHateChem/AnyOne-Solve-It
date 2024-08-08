@@ -14,8 +14,8 @@ import syleelsw.anyonesolveit.domain.login.RefreshShort;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshRedisRepository;
 import syleelsw.anyonesolveit.domain.login.Respository.RefreshShortRedisRepository;
 import syleelsw.anyonesolveit.domain.study.Notice;
-import syleelsw.anyonesolveit.domain.study.Repository.NoticeRepository;
-import syleelsw.anyonesolveit.domain.study.Repository.StudyRepository;
+import syleelsw.anyonesolveit.domain.study.ProblemDetail;
+import syleelsw.anyonesolveit.domain.study.Repository.*;
 import syleelsw.anyonesolveit.domain.study.Study;
 import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
@@ -43,6 +43,10 @@ public class LoginService {
     private final NoticeRepository noticeRepository;
     private final StudyRepository studyRepository;
     private final UserService userService;
+    private final StudyProblemRepository studyProblemRepository;
+    private final ParticipationRepository participationRepository;
+    private final ProblemDetailRepository problemDetailRepository;
+    private final ProblemCodeRepository problemCodeRepository;
 
     String kakaoUrl = "https://kauth.kakao.com/oauth";
     @Value("${spring.kakao.client_id}")
@@ -64,23 +68,33 @@ public class LoginService {
             log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
-            log.info("jwtHeaders: {}", jwtHeaders);
-            refreshShortRedisRepository.save(new RefreshShort(jwt, refresh, jwtHeaders.getFirst("Access")));
+            log.info("Access {}", jwtHeaders.get("Access").get(0));
+            // 짧은시간 2회 요청 대비용
+            refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders.get("Access").get(0)));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
         }else{
+            // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
-                return new ResponseEntity<>(tokenValidationService.makeJwtHeaders(byId.get().getAccess(), byId.get().getNewRefresh()), HttpStatus.OK);
+                log.info("Short Expried Token.., headers: {}", byId.get());
+                String refresh = byId.get().getRefreshToken();
+                String access = byId.get().getAccess();
+                HttpHeaders headers = tokenValidationService.makeJwtHeaders(access, refresh);
+                log.info("{}", headers);
+                return new ResponseEntity<>(headers, HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
-            return new ResponseEntity(HttpStatus.FORBIDDEN);
+            return new ResponseEntity(HttpStatus.UNAUTHORIZED);
         }
     }
 
     public HttpHeaders test(String email){
-        UserInfo userInfo = userRepository.findUserByEmail(email).get();
+        log.info("Test Login..., {}", userRepository.findUserByEmail(email));
+        Optional<UserInfo> byEmail = userRepository.findUserByEmail(email);
+        UserInfo userInfo;
         String username = "dltjrdn";
-        if(userInfo == null) { userInfo = join(email, username, Provider.test, "123");}
+        if(byEmail.isEmpty()) { userInfo = join(email, username, Provider.test, "123");}
+        else {userInfo= byEmail.get();}
         findUserAndJoin(email, username, Provider.test, "");
         String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(userInfo.getId());
         return tokenValidationService.getJwtHeaders(userInfo.getId(), refresh);
@@ -88,8 +102,10 @@ public class LoginService {
 
 
     public ResponseEntity findUserAndJoin(String email, String username,Provider provider, String picture) {
-        UserInfo userInfo = userRepository.findUserByEmail(email).get();
-        if(userInfo == null) { userInfo = join(email, username, provider, picture);}
+        Optional<UserInfo> OptionalUserInfo = userRepository.findUserByEmail(email);
+        UserInfo userInfo = null;
+        if(OptionalUserInfo.isEmpty()) { userInfo = join(email, username, provider, picture);}
+        else{ userInfo = OptionalUserInfo.get();}
         if(!userInfo.getProvider().equals(provider)) return new ResponseEntity(Map.of("provider", userInfo.getProvider()), HttpStatus.BAD_REQUEST);
         if(userInfo.getBjname()!=null){
             RankAndSolvedProblem rankAndSolveProblem = userService.getRankAndSolveProblem(userInfo.getBjname());
@@ -260,22 +276,21 @@ public class LoginService {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
 
+        participationRepository.deleteAllByUser(user);
+        noticeRepository.deleteAllByUserAndToUser(user);
         //탈퇴처리를 한다.
-        studiesByMember.stream().forEach( study ->{
+        studiesByMember.stream().forEach(study ->{
             if(study.getMembers().size() == 1){
+                List<ProblemDetail> allByStudy = problemDetailRepository.findAllByStudy(study);
+                allByStudy.forEach( pd -> problemCodeRepository.deleteAll(pd.getProblemCodes()));
+                problemDetailRepository.deleteAllByStudy(study);
+                studyProblemRepository.deleteAllByStudy(study);
                 studyRepository.delete(study);
             }else{
                 study.getMembers().remove(user);
                 studyRepository.save(study);
             }
         });
-        Optional<List<Notice>> allByToUserOrderByModifiedDateTimeDesc = noticeRepository.findAllByToUserOrderByModifiedDateTimeDesc(user);
-        if(allByToUserOrderByModifiedDateTimeDesc.isPresent()){
-            allByToUserOrderByModifiedDateTimeDesc.get().stream()
-                    .forEach(n -> {
-                        noticeRepository.delete(n);
-                    });
-        }
         userRepository.delete(user);
         return new ResponseEntity(HttpStatus.OK);
     }
