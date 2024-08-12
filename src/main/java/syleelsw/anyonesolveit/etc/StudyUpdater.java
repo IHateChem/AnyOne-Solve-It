@@ -44,7 +44,6 @@ public class StudyUpdater {
 
     @PostConstruct
     public void init() {
-        log.info("Update Tags on startup...");
         problemTagsUpdator.update();
         List<ProblemTag> tags = problemTagRepository.findAll();
         for(ProblemTag tag: tags){
@@ -60,7 +59,6 @@ public class StudyUpdater {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void run() {
-        log.info("Update Study...");
         List<Study> studies = studyRepository.findAll();
         for(Study study:studies){
             int rank = 0;

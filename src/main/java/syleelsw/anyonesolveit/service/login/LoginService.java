@@ -62,13 +62,9 @@ public class LoginService {
     @Transactional
     public ResponseEntity updateRefreshToken(String jwt){
         Long id = provider.getUserId(jwt);
-        log.info("Expried Token.. , id: {}", id);
-
         if(tokenValidationService.checkRefreshToken(jwt, id)){
-            log.info("Valid Expried Token.., id: {}", id);
             String refresh = tokenValidationService.makeRefreshTokenAndSaveToRedis(id);
             HttpHeaders jwtHeaders = tokenValidationService.getJwtHeaders(id, refresh);
-            log.info("Access {}", jwtHeaders.get("Access").get(0));
             // 짧은시간 2회 요청 대비용
             refreshShortRedisRepository.save(new RefreshShort(jwt, jwtHeaders.get("Access").get(0)));
             return new ResponseEntity<>(jwtHeaders, HttpStatus.OK);
@@ -76,11 +72,9 @@ public class LoginService {
             // 짧은시간 2회 요청 대비용
             Optional<RefreshShort> byId = refreshShortRedisRepository.findById(jwt);
             if(byId.isPresent()){
-                log.info("Short Expried Token.., headers: {}", byId.get());
                 String refresh = byId.get().getRefreshToken();
                 String access = byId.get().getAccess();
                 HttpHeaders headers = tokenValidationService.makeJwtHeaders(access, refresh);
-                log.info("{}", headers);
                 return new ResponseEntity<>(headers, HttpStatus.OK);
             }
             tokenValidationService.deleteRedisRepository(id);
@@ -127,7 +121,6 @@ public class LoginService {
         GoogleInfoResponse googleInfoResponse = infoResponse.getBody();
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
-        log.info("usernaem: {}", username);
         String picture = googleInfoResponse.getPicture();
         return findUserAndJoin(email, username, authProvider, picture);
     }
@@ -138,7 +131,6 @@ public class LoginService {
         ResponseEntity<NaverInfo> infoResponse = tokenValidationService.getResponseFromNaver(authCode, restTemplate, authState);
 
         NaverInfo googleInfoResponse = infoResponse.getBody();
-        log.info("Nave user Info: {}", googleInfoResponse.toString());
         String email = googleInfoResponse.getEmail();
         String username = googleInfoResponse.getName();
         String picture = googleInfoResponse.getProfile_image();
@@ -146,7 +138,6 @@ public class LoginService {
     }
 
     public UserInfo join(String email, String username, Provider provider, String picture){
-        log.info("Join {}", email);
         UserInfo userInfo = UserInfo.builder()
                 .email(email)
                 .username(email)
@@ -189,7 +180,6 @@ public class LoginService {
                 + github_id +"&scope=user:email"
                 +"&redirect_uri=http://localhost:8080/api/login/github";
         RestTemplate restTemplate = new RestTemplate();
-        log.info(url);
         return restTemplate.getForObject(url, String.class);
     }
 
@@ -222,8 +212,6 @@ public class LoginService {
                 .client_secret(kakao_secret)
                 .code(code)
                 .build(), url);
-        log.info("CODe : {}", code);
-        log.info(kakaoResponse.toString());
         String email = kakaoResponse.getKakao_account().getEmail();
         String username =kakaoResponse.getKakao_account().getProfile().getNickname();
         String picture = kakaoResponse.getKakao_account().getProfile().getProfile_image_url();
@@ -239,12 +227,10 @@ public class LoginService {
                 +"&client_secret=" + github_secret
                 +"&code=" + code;
         RestTemplate restTemplate = new RestTemplate();
-        log.info("tokenLoginUrl :{}", url);
         ResponseEntity<GithubTokenResponse> responseEntity = restTemplate.exchange(url,
                 HttpMethod.POST,
                 null,
                 GithubTokenResponse.class);
-        log.info("token response: {}", responseEntity);
         GithubTokenResponse githubTokenResponse = responseEntity.getBody();
         String baseUrl = "https://api.github.com/user";
 
@@ -255,9 +241,7 @@ public class LoginService {
                 HttpMethod.GET,
                 entity,
                 GithubInfo.class);
-        log.info("infoResponse {} ", infoResponseEntity);
         GithubInfo githubInfo = infoResponseEntity.getBody();
-        log.info("info: {}", githubInfo);
         String email = (String) githubInfo.getEmail();
         String username = (String) githubInfo.getName();
         String picture = (String) githubInfo.getAvatar_url();

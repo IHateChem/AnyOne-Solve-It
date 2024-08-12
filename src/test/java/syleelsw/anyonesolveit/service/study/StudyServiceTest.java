@@ -803,7 +803,6 @@ class StudyServiceTest {
 
 
         Study study = (Study) response.getBody();
-        log.info("Status: ", response);
         Long study_id = study.getId();
         ResponseEntity responseEntity = studyService.delStudy(jwt1, study_id);
         //포비든 뜨는지 확인
@@ -859,7 +858,6 @@ class StudyServiceTest {
         UserInfo userInfo1 = userRepository.findById(1l).get();
         Study study1 = studyRepository.findById(study_id).get();
         assertThat(study1.getUser().getId()).isEqualTo(1l);
-        log.info(study1.toString());
 
         ResponseEntity<StudyResponse> response1 = studyService.getStudy(jwt, study_id);
         assertThat(response1.getBody().getId()).isEqualTo(study_id);
