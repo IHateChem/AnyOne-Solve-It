@@ -49,6 +49,11 @@ public class LoggingFilter implements Filter {
             logger.error(logMessage);
         }
 
+        // 응답 데이터를 원래의 HttpServletResponse에 복사
+        byte[] responseData = responseWrapper.getResponseBody().getBytes(StandardCharsets.UTF_8);
+        response.getOutputStream().write(responseData);
+        response.getOutputStream().flush();
+
     }
 
     @Override
