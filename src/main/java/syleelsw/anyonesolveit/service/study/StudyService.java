@@ -75,7 +75,6 @@ public class StudyService {
         if(users==null || users.size() < members.size()){
             throw new IllegalArgumentException("존재하지 않는 유저가 있습니다.");
         }
-        log.info("유효한 유저입니다. ");
         return new HashSet<>(users);
     }
     @Transactional
@@ -83,8 +82,6 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Set<UserInfo> members;
-        log.info("{} studyDto is.. .", studyDto);
-
 
         try{
             //잘못된 유저가 있는지 체크
@@ -109,7 +106,6 @@ public class StudyService {
         problemSolvedCountUpdater.update(study);
         study = studyRepository.save(study);
         study.setRecruiting(true);
-        log.info("study: {}", study);
         UserStudyJoin userStudyJoin = UserStudyJoin.builder().study(study).user(user).build();
         //serStudyJoinRepository.save(userStudyJoin);
         return new ResponseEntity(StudyResponse.of(study), HttpStatus.OK);
@@ -159,7 +155,6 @@ public class StudyService {
             case 3 -> studies =  studyRepository.searchStudyDefaultOrderBy3(language, level, area, city, term, pageRequest, onlineOnly, recruitingOnly);
             default ->  getBadResponse();
         }
-        log.info("스터디: {}", studies);
         return new ResponseEntity(studies.stream().map(StudyResponse::of).collect(Collectors.toList()), HttpStatus.OK);
     }
     public void updateStudy(Study study, StudyDto studyDto, Set<UserInfo> members){
@@ -212,7 +207,6 @@ public class StudyService {
     }
 
     private Problem getProblemInfoFromSolvedAc(Integer problemId){
-        log.info("없는 문제.. {}", problemId);
         String url = "https://solved.ac/api/v3/problem/show?problemId=" + problemId;
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -304,7 +298,6 @@ public class StudyService {
                 .build());
 
         //성공시 알림 생성
-        log.info("참가 신청 성공, {}", participationDTO);
         noticeService.createNotice56(study, study.getUser(),5 ,user);
 
         return new ResponseEntity(save.getId(), HttpStatus.OK);
@@ -332,7 +325,6 @@ public class StudyService {
 
     @Transactional
     public ResponseEntity confirmParticipation(String access, String participationId, Boolean confirm) {
-        log.info("participationId: {}", participationId);
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
 
@@ -407,7 +399,6 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Study> studyOptional = studyRepository.findById(id);
-        log.info("Study 나가기. Study: {}", studyOptional.get().getMembers());
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
 
@@ -429,8 +420,6 @@ public class StudyService {
 
         study.getMembers().remove(user);
         studyRepository.save(study);
-
-        log.info("스터디원 제거 성공 {}", study.getMembers().contains(user));
         noticeService.createNotice56(study, study.getUser(), 6, user);
         return getGoodResponse(Map.of("isManager", false));
     }
@@ -451,7 +440,6 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Study> studyOptional = studyRepository.findById(id);
-        log.info("이문제 어때요 전부 삭제. Study: {}", studyOptional.get());
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
         studyProblemRepository.deleteAllByStudy(study);
@@ -463,7 +451,6 @@ public class StudyService {
         Long userId = jwtTokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Study> studyOptional = studyRepository.findById(id);
-        log.info("스터디장 변경. Study: {}", studyOptional.get());
         if(studyOptional.isEmpty()) return getBadResponse();
         Study study = studyOptional.get();
 
@@ -623,7 +610,7 @@ public class StudyService {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             return mapper.readValue(response8.toString(), SolvedProblemPages.class);
         }catch (Exception e){
-            log.info("error: {}", e.getMessage());
+            log.error("error: {}", e.getMessage());
             return null;
         }
     }
@@ -654,7 +641,6 @@ public class StudyService {
         String urlString = "https://solved.ac/api/v3/search/problem?query=" + prefix+ query;
         urlString = urlString.replaceAll(" ", "%20").replaceAll("#", "%23").replaceAll("@", "%40");
         SolvedProblemPages solvedProblemPages = requestToSolvedAcSearch(urlString);
-        log.info("url: {}, solvedProblemPages: {}", urlString, solvedProblemPages);
         if(solvedProblemPages == null) return getBadResponse();
         int count= solvedProblemPages.getCount();
         int problemPerRequest = solvedProblemPages.getItems().size();
@@ -715,7 +701,6 @@ public class StudyService {
         }
         int totalSize = items.size();
         items = (List<StudyProblemEntity>) listSplitter(items, page);
-        log.info("items: {}", items);
 
         return new ResponseEntity(Map.of("total", totalSize, "result", items.stream().map(StudyProblemResponse::of).collect(Collectors.toList())), HttpStatus.OK);
     }

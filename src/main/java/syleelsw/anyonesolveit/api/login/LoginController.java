@@ -1,8 +1,10 @@
 package syleelsw.anyonesolveit.api.login;
 
 import com.sun.net.httpserver.HttpsServer;
+import io.micrometer.common.lang.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -21,6 +23,8 @@ import java.util.Map;
 public class LoginController {
     private final LoginService loginService;
     private final UserService userService;
+    @Value("${anyone.log key}")
+    private String key;
     @GetMapping("/tests")
     public ResponseEntity tests(){
         return new ResponseEntity(userService.getSolvedProblem("kepler186f"), HttpStatus.OK);
@@ -40,10 +44,6 @@ public class LoginController {
     public ResponseEntity tkakaoLogin(){
         return loginService.kakaoLogin();
     }
-    @GetMapping("/login/github/tst")
-    public String tgithubLogin(){
-        return loginService.gitHubLogin();
-    }
 
     @PostMapping("/login/kakao")
     public ResponseEntity kakaoLogin(){
@@ -56,7 +56,8 @@ public class LoginController {
 
 
     @GetMapping("/test")
-    public ResponseEntity getTest(){
+    public ResponseEntity getTest(@RequestParam @Nullable String _key){
+        if(_key == null || !_key.equals(key)) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         return new ResponseEntity(loginService.test("syleelsw@snu.ac.kr"), HttpStatus.OK);
     }
 

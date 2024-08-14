@@ -34,7 +34,6 @@ public class ControllerAdvice {
     private final RefreshCntRedisRepository refreshCntRedisRepository;
     @Around("syleelsw.anyonesolveit.aops.Pointcuts.allService() &&  args(loginBody, bindingResult)")
     public ResponseEntity validator(ProceedingJoinPoint joinPoint, LoginBody loginBody,  BindingResult bindingResult) throws Throwable {
-        log.info("validation AOP");
         if(bindingResult.hasErrors()){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }

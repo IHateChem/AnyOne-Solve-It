@@ -26,6 +26,10 @@ public class LogController {
     private static final String LOG_FILE_PATH = "log/access.log";
     @Value("${anyone.log key}")
     private String LOGKEY;
+    @GetMapping("/")
+    public ResponseEntity HealthCheck() {
+        return new ResponseEntity(HttpStatus.OK);
+    }
     @PostMapping("/logs") @IgnoreValidation
     public ResponseEntity<Map<String, Object>> getLogs(@RequestParam(value = "lastPosition", defaultValue = "0") long lastPosition, @RequestBody Key key) throws IOException {
         if(key == null || key.key == null || !key.key.equals(LOGKEY)) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
