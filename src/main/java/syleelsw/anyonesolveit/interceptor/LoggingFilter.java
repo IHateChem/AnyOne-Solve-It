@@ -47,6 +47,19 @@ public class LoggingFilter implements Filter {
             );
 
             logger.error(logMessage);
+        }else{
+            String logMessage = String.format(
+                    "{ \"timestamp\": \"%s\", \"request\": \"%s %s\" , \"status_code\": %d, \"response Body\": \"%s\" , \"request_body\": \"%s\" , \"request_params\": \"%s\"}",
+                    Instant.now().toString(),
+                    requestWrapper.getMethod(),
+                    requestWrapper.getRequestURI(),
+                    statusCode,
+                    responseWrapper.getResponseBody(),
+                    requestWrapper.getRequestBody(),
+                    requestWrapper.getParameter()
+            );
+
+            logger.info(logMessage);
         }
 
         // 응답 데이터를 원래의 HttpServletResponse에 복사
