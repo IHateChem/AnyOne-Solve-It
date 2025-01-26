@@ -168,6 +168,7 @@ public class StudyService {
         study.setMembers(members);
         study.setFrequency(studyDto.getFrequency());
         study.setStudy_time(studyDto.getStudy_time());
+        study.setHow_many(studyDto.getHow_many());
     }
     @Transactional
     public ResponseEntity putStudy(Long id, StudyDto studyDto) {
