@@ -23,7 +23,6 @@ public class RefreshCnt {
     }
 
     public void addCnt() {
-        log.info("refresh cnt add,id:{} cnt : {} ",this.refreshToken, this.cnt);
         this.cnt++;
     }
 }

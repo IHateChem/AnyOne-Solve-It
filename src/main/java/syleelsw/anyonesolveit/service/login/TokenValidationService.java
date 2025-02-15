@@ -64,7 +64,6 @@ public class TokenValidationService {
     }
     @Timer("Naver Authcode")
     public ResponseEntity<NaverInfo> getResponseFromNaver(String authCode, RestTemplate restTemplate, String authState){
-        log.info("authcode: {}", authCode);
         MultiValueMap<String, String> params = makeNaverRequestParam(authCode, authState);
         HttpEntity<MultiValueMap<String, String>> naverTokenRequest = makeTokenRequest(params);
 
@@ -79,9 +78,6 @@ public class TokenValidationService {
                 naverProfileRequest,
                 NaverInfoResponse.class
         );
-        log.info("UserInfo Nave: {}", responseEntity.toString());
-
-
         return new ResponseEntity(responseEntity.getBody().getResponse(), HttpStatus.OK);
     }
     private HttpEntity<MultiValueMap<String, String>> makeProfileRequest(String naverToken) {
@@ -107,7 +103,6 @@ public class TokenValidationService {
 
         KakaoTokenResponse kakaoTokenResponse = kakaoTokenResponseResponseEntity.getBody();
         String accessToken = kakaoTokenResponse.getAccess_token();
-        log.info("token: {}", accessToken);
         String kakaoInfoUrl = "https://kapi.kakao.com/v2/user/me";// + "?property_keys=[\"kakao_account.profile\",\"kakao_account.name\",\"kakao_account.email\"]";
         HttpEntity<MultiValueMap<String, String>> kakaoProfileRequest = makeProfileRequest(accessToken);
         ResponseEntity<KakaoInfo> responseEntity = restTemplate.exchange(
@@ -116,7 +111,6 @@ public class TokenValidationService {
                 kakaoProfileRequest,
                 KakaoInfo.class
         );
-        log.info("reponse {}", responseEntity);
 
         return responseEntity.getBody();
 
@@ -124,7 +118,6 @@ public class TokenValidationService {
 
     @Timer("Google Authcode")
     public ResponseEntity<GoogleInfoResponse> getResponseFromGoogle(String authCode, RestTemplate restTemplate){
-        log.info("authcode: {}", authCode);
         GoogleRequest googleOAuthRequestParam = GoogleRequest
                 .builder()
                 .clientId(clientId)
@@ -149,12 +142,7 @@ public class TokenValidationService {
     public boolean checkRefreshToken(String jwt,Long key){
         Optional<RefreshEntity> refreshEntity = refreshRedisRepository.findById(key);
         if(refreshEntity.isPresent()){
-            log.info("Refresh Token data... {}", refreshEntity.get());
-            log.info("jwt: {}", jwt);
             RefreshEntity data = refreshEntity.get();
-            log.info("data.getExpired: {}", data.getExpired());
-            log.info("cur time: {}",System.currentTimeMillis());
-            log.info("is Equal: {}",data.getRefreshToken().equals(jwt));
             if(!data.getRefreshToken().equals(jwt) || data.getExpired() > System.currentTimeMillis()){
                 return false;
             }

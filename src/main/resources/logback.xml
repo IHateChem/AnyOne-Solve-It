@@ -22,7 +22,7 @@
             <file>D:/logs/error.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
                 <fileNamePattern>D:/logs/backup/error%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-                <maxHistory>90</maxHistory>
+                <maxHistory>10</maxHistory>
             </rollingPolicy>
             <encoder>
                 <pattern>%boldMagenta(%d{MM-dd HH:mm:ss}) [%boldYellow(%-5level)] %cyan(%logger{5}.%M) - %msg %n</pattern>
@@ -44,7 +44,7 @@
             <file> log/access.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
                 <fileNamePattern> log/backup/access%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-                <maxHistory>90</maxHistory>
+                <maxHistory>10</maxHistory>
             </rollingPolicy>
             <encoder>
                 <pattern>%boldMagenta(%d{MM-dd HH:mm:ss}) [%boldYellow(%-5level)] %cyan(%logger{5}.%M) - %msg %n</pattern>

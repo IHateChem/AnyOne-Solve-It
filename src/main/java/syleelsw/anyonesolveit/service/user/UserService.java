@@ -107,7 +107,6 @@ public class UserService {
             Integer rank = rankAndProblems.rank;
             SolvedProblemDto solvedProblem = rankAndProblems.solvedProblemDto;
             user.update(rank, solvedProblem, userProfile);
-            log.info("업데이트 저장: {}", user);
             userRepository.save(user);
         }catch (IllegalStateException e){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -140,7 +139,6 @@ public class UserService {
         String user_level_problem = restTemplate.getForEntity(solved_dac_url + "/user/problem_stats?handle=" + username, String.class).getBody();
         ResponseEntity<SolvedacUserInfoDto> bjUserInfo = restTemplate.getForEntity(solved_dac_url+ "/user/show?handle=" + username, SolvedacUserInfoDto.class);
         Long solvedCount = bjUserInfo.getBody().getSolvedCount();
-        log.info("SolvedProblem: {}", solvedCount);
         // 걸리는 시간을 알아보기 위해 Timer를 추가한다.
 
         int pageCount = (int) (solvedCount / 50) + 1;
@@ -219,7 +217,6 @@ public class UserService {
         }
         user.setFirst(false);
         setUserInformation(user, myPage);
-        log.info("user: {}", user);
         return new ResponseEntity(HttpStatus.OK);
     }
     @Transactional
@@ -279,7 +276,6 @@ public class UserService {
         Long userId = tokenProvider.getUserId(access);
         UserInfo user = userRepository.findById(userId).get();
         Optional<Notice> byId = noticeService.findById(id);
-        log.info("del info: {}", byId.get().toString());
         if(byId.isEmpty() || !byId.get().getToUser().equals(user)) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         noticeService.delById(id);
         return new ResponseEntity(HttpStatus.OK);
