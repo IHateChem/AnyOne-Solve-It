@@ -61,7 +61,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.8.0'
     // log
     implementation group: "ch.qos.logback", name:"logback-classic", version:"1.4.7"
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     //prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
 }
