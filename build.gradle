@@ -50,7 +50,6 @@ dependencies {
 
     //aop
     implementation 'org.springframework.boot:spring-boot-starter-aop'
-
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     //validation
@@ -60,8 +59,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.8.0'
     // log
     implementation group: "ch.qos.logback", name:"logback-classic", version:"1.4.7"
-    //prometheus
-    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {
