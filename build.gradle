@@ -36,9 +36,9 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok' // 테스트 의존성 추가
     testAnnotationProcessor 'org.projectlombok:lombok' // 테스트 의존성 추가
 
-
     // oauth2-client 라이브러리
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
 
     //mariadb
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
@@ -51,7 +51,6 @@ dependencies {
 
     //aop
     implementation 'org.springframework.boot:spring-boot-starter-aop'
-
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     //validation
@@ -61,12 +60,6 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:4.8.0'
     // log
     implementation group: "ch.qos.logback", name:"logback-classic", version:"1.4.7"
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    //log in NHN
-    // implementation group: 'org.json', name: 'json', version: '20240205'
-    // implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5'
-    // testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
-    // implementation files("libs/toast-logncrash-logback-sdk-3.0.5.jar")
 }
 
 tasks.named('test') {

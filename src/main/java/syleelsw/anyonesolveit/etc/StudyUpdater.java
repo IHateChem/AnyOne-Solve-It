@@ -3,18 +3,15 @@ package syleelsw.anyonesolveit.etc;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.collections.SynchronizedStack;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import syleelsw.anyonesolveit.api.study.dto.SolvedProblemPages;
 import syleelsw.anyonesolveit.api.study.dto.SolvedacItem;
-import syleelsw.anyonesolveit.api.study.dto.SolvedacPageItem;
 import syleelsw.anyonesolveit.api.user.dto.SolvedProblemDto;
 import syleelsw.anyonesolveit.api.user.dto.SolvedacUserInfoDto;
 import syleelsw.anyonesolveit.domain.study.ProblemTag;
@@ -25,12 +22,10 @@ import syleelsw.anyonesolveit.domain.user.UserInfo;
 import syleelsw.anyonesolveit.domain.user.UserRepository;
 import syleelsw.anyonesolveit.service.study.TagTrie;
 import syleelsw.anyonesolveit.service.study.tools.ProblemTagsUpdator;
-import syleelsw.anyonesolveit.service.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 @Component @RequiredArgsConstructor @Slf4j
 public class StudyUpdater {
@@ -44,7 +39,6 @@ public class StudyUpdater {
 
     @PostConstruct
     public void init() {
-        log.info("Update Tags on startup...");
         problemTagsUpdator.update();
         List<ProblemTag> tags = problemTagRepository.findAll();
         for(ProblemTag tag: tags){
@@ -60,7 +54,6 @@ public class StudyUpdater {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void run() {
-        log.info("Update Study...");
         List<Study> studies = studyRepository.findAll();
         for(Study study:studies){
             int rank = 0;
